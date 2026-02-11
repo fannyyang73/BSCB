@@ -10,4 +10,11 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Suggests: 
-    renv
+    DEoptim,
+    glmnet,
+    MASS,
+    renv,
+    testthat (>= 3.0.0)
+Imports: 
+    mvtnorm
+Config/testthat/edition: 3
