@@ -13,12 +13,82 @@
 #' @param c_value
 #' @param alpha_0
 #' @param optimize_type
+#' @param theta_true True parameter values
 #' @param verbose
 #'
-#' @return
+#' @return A list of class "bscb_fit" containing:
+#' \item{lambda}{The critical value for the credible band}
+#' \item{lower_bound}{Function to compute lower band at x}
+#' \item{upper_bound}{Function to compute upper band at x}
+#' \item{mu_star}{Posterior mean of theta}
+#' \item{cov_theta}{Posterior covariance matrix of theta}
+#' \item{theta_true}{True parameters (if provided)}
+#' \item{order_form}{Function to create design vector}
+#' \item{x_range}{Range of x values}
+#' \item{data}{Original data (X and Y)}
+#' \item{lambda_samples}{Monte Carlo samples used to compute lambda}
 #' @export
 #'
 #' @examples
+#' # Example 1: Simple quadratic model with i.i.d. errors
+#' set.seed(123)
+#' n <- 50
+#' p <- 2
+#' x <- seq(-5, 5, length.out = n)
+#' X <- cbind(1, x, x^2)
+#' theta_true <- c(-6, -3, 0.25)
+#' e_sd <- 0.2
+#'
+#' # Generate response
+#' epsilon <- rnorm(n, mean = 0, sd = e_sd)
+#' Y <- X %*% theta_true + epsilon
+#'
+#' # Compute BSCB-C with default settings
+#' fit <- compute_bscb_conjugate(X=X,  Y=Y, alpha = 0.05, a = -5, b = 5, L = 50000,
+#'                               AR_setting = 0, # 0: iid error; 1: autoregressive error
+#'                               rho = NULL,
+#'                               mu_setting = 1,
+#'                               P_setting = 1,
+#'                               c_value = 0.001,
+#'                               alpha_0 = 1,
+#'                               optimize_type = "G", # D: Doptimize; G: Global-optimize
+#'                               theta_true = theta_true,
+#'                               verbose = FALSE)
+#' # View results
+#' print(fit$lambda)           # Critical value
+#' print(fit$mu_star)          # Posterior mean of theta
+#' print(fit$cov_theta)        # Posterior covariance matrix
+#'
+#'
+#' # Compute BSCB-C at a specific point
+#' x_new <- 0.5
+#' lower <- fit$lower_bound(x_new)
+#' upper <- fit$upper_bound(x_new)
+#' cat("At x =", x_new, ": [", lower, ",", upper, "]\n")
+#'
+#' # Vectorized computation for plotting
+#' x_seq <- seq(-5, 5, length.out = 1000)
+#' lower_vec <- fit$lower_bound(x_seq)
+#' upper_vec <- fit$upper_bound(x_seq)
+#' y_true <- cbind(1, x_seq, x_seq^2) %*% theta_true
+#'
+#' # Visualization
+#' plot(x_seq, lower_vec, type = "l", col = "red", lty = 2, lwd = 2,
+#'      ylim = range(c(lower_vec, upper_vec, Y)),
+#'      xlab = "x", ylab = "y",
+#'      main = "95% Bayesian Simultaneous Credible Band (Conjugate Prior)")
+#' lines(x_seq, upper_vec, col = "red", lty = 2, lwd = 2)
+#' lines(x_seq, y_true, col = "blue", lwd = 2)
+#' points(x, Y, pch = 16, col = "gray")
+#' legend("topright",
+#'        legend = c("True curve", "Data", "95% BSCB-C"),
+#'        col = c("blue", "gray", "red"),
+#'        lty = c(1, NA, 2),
+#'        pch = c(NA, 16, NA),
+#'        lwd = 2)
+
+
+
 compute_bscb_conjugate <- function(X, # X is a n\times (p+1) matrix
                                    Y, # Y is a n dimensional vector
                                    alpha = 0.05,
@@ -31,7 +101,8 @@ compute_bscb_conjugate <- function(X, # X is a n\times (p+1) matrix
                                    P_setting = 1,
                                    c_value = 0.001,
                                    alpha_0 = 1,
-                                   optimize_type = "D", # D: Doptimize; G: Global-optimize
+                                   optimize_type = "G", # D: Doptimize; G: Global-optimize
+                                   theta_true = NULL,
                                    verbose = TRUE
                                    ){
 
@@ -157,7 +228,10 @@ compute_bscb_conjugate <- function(X, # X is a n\times (p+1) matrix
     if(optimize_type == "D"){
       result <- DEoptim::DEoptim(fn = function(x) fn_neg_Bayes_PCP(x, theta_hat, mu_star, cov_theta),
                         lower = a,
-                        upper = b)
+                        upper = b,
+                        control = DEoptim::DEoptim.control(itermax = 200, NP = 50, trace = FALSE)
+                        )
+
       neg_optim <- result$optim$bestval
       lambda_samples[j] <- neg_optim*(-1)
 
@@ -210,6 +284,9 @@ compute_bscb_conjugate <- function(X, # X is a n\times (p+1) matrix
       lambda = as.numeric(lambda),
       lower_bound = lower_bound,
       upper_bound = upper_bound,
+
+      theta_true = theta_true,
+      order_form = order_form,
 
       # Posterior parameters
       mu_star = as.vector(mu_star),

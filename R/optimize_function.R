@@ -66,7 +66,7 @@ fn_neg_Bayes_PCP <- function(x, theta_hat, mu_star, cov_theta) {
   return(lambda)
 }
 
-fn_Bayes_ECR <- function(x) {
+fn_Bayes_ECR <- function(x, theta_true, mu_star, cov_theta) {
   x_i <- order_form(x)
   numerator <- abs((x_i)%*%t(theta_true-t(mu_star)))
   denominator <- sqrt(x_i%*%cov_theta%*%t(t(x_i)))
@@ -75,10 +75,9 @@ fn_Bayes_ECR <- function(x) {
 }
 
 
-fn_Freq_ECR <- function(x) {
+fn_Freq_ECR <- function(x, theta_true, lm_theta_hat, S, inv) {
   x_i <- order_form(x)
   numerator <- abs((x_i) %*% t(theta_true - t(lm_theta_hat)))
-  #denominator <- S*sqrt(x_i%*%inv%*%t(t(x_i)))
   denominator <- sqrt(x_i%*%(as.numeric(S^2) * inv)%*%t(t(x_i))) # S, inv
   lambda <- numerator %*% solve(denominator)
   return(lambda)
@@ -194,7 +193,7 @@ find_global_maximum <- function(fn, a, b, order_form, theta, mu_star, cov_mat,
 
 
 
-f_L_SCB <- function(x){
+f_L_SCB <- function(x, cov_theta, mu_star, lambda_best_optim, theta_true){
   x_i <- order_form(x)
   denominator <- sqrt(x_i%*%cov_theta%*%t(t(x_i)))
   lower_bound <- x_i%*%mu_star - lambda_best_optim*denominator
@@ -204,7 +203,7 @@ f_L_SCB <- function(x){
   return(y_l)
 }
 
-f_U_SCB <- function(x){
+f_U_SCB <- function(x, cov_theta, mu_star, lambda_best_optim, theta_true){
   x_i <- order_form(x)
   denominator <- sqrt(x_i%*%cov_theta%*%t(t(x_i)))
   upper_bound <- x_i%*%mu_star + lambda_best_optim*denominator
@@ -218,7 +217,7 @@ f_U_SCB <- function(x){
 ###  Huber regression with 5-fold cross-validation  #####
 #########################################################
 cv_huber <- function(x_scale, Y, k_vals, folds = 5) {
-  cv_folds <- createFolds(Y, k = folds, list = TRUE, returnTrain = FALSE) # Create CV folds
+  cv_folds <- caret::createFolds(Y, k = folds, list = TRUE, returnTrain = FALSE) # Create CV folds
   errors <- matrix(NA, nrow = length(k_vals), ncol = folds) # Store results
 
   for (ii in seq_along(k_vals)) {  # Loop over k values
@@ -250,14 +249,14 @@ cv_huber <- function(x_scale, Y, k_vals, folds = 5) {
 #########################################################
 ############   Posterior coverage probability  ##########
 #########################################################
-L_SCB <- function(x){
+L_SCB <- function(x, cov_theta, mu_star, lambda_best_optim){
   x_i <- order_form(x)
   denominator <- sqrt(x_i%*%cov_theta%*%t(t(x_i)))
   lower_bound <- x_i%*%mu_star - lambda_best_optim*denominator
   return(lower_bound)
 }
 
-U_SCB <- function(x){
+U_SCB <- function(x, cov_theta, mu_star, lambda_best_optim){
   x_i <- order_form(x)
   denominator <- sqrt(x_i%*%cov_theta%*%t(t(x_i)))
   upper_bound <- x_i%*%mu_star + lambda_best_optim*denominator
@@ -265,7 +264,7 @@ U_SCB <- function(x){
 }
 
 # Function to compute probability at a given x
-prob_x_SCB <- function(x) {
+prob_x_SCB <- function(x, mu_star, cov_theta, dof) {
   x_vec <- order_form(x)
   mu_Y <- sum(x_vec * mu_star)
   sigma_Y <- sqrt(sum(x_vec * (cov_theta %*% x_vec)))
@@ -274,7 +273,7 @@ prob_x_SCB <- function(x) {
 }
 
 # Normal density function restricted to [a,b]
-truncated_normal_density <- function(x) {
+truncated_normal_density <- function(x, a, b) {
   denom <- pnorm(b) - pnorm(a)  # Normalization constant
   return(dnorm(x) / denom)
 }
@@ -284,7 +283,7 @@ normal_density <- function(x) {
   return(dnorm(x, mean = 0, sd = 1))
 }
 
-uniform_density <- function(x){
+uniform_density <- function(x, a, b){
   return(dunif(x, min = a, max= b))
 }
 # Integral function

@@ -2,4 +2,5 @@
 
 export(add)
 export(compute_bscb_conjugate)
+export(coverage_ESCR)
 export(create_order_form)
