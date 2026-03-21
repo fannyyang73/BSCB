@@ -8,10 +8,7 @@
 #' @param L
 #' @param AR_setting
 #' @param rho
-#' @param mu_setting
-#' @param P_setting
-#' @param c_value
-#' @param alpha_0
+#' @param hyperparameter
 #' @param optimize_type
 #' @param theta_true True parameter values
 #' @param verbose

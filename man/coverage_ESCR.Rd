@@ -4,7 +4,7 @@
 \alias{coverage_ESCR}
 \title{Compute the coverage of BSCB}
 \usage{
-coverage_ESCR(fit, verbose = FALSE)
+coverage_ESCR(fit, optimize_type = c("P", "G", "D"), verbose = FALSE)
 }
 \arguments{
 \item{fit}{A BSCB fit object containing lambda, mu_star, cov_theta, theta_true, x_range, order_form}
@@ -33,7 +33,7 @@ fit <- compute_bscb_conjugate(X, Y, alpha = 0.05, a = -5, b = 5,
                                verbose = FALSE)
 
 # Check the empirical simultaneous coverage rate (ESCR)
-is_covered <- coverage_ESCR(fit, verbose = TRUE)
+is_covered <- coverage_ESCR(fit,  optimize_type ="P", verbose = TRUE)
 cat("Coverage indicator:", is_covered, "\n")
 
 }

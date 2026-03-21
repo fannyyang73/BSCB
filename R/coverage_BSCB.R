@@ -21,10 +21,12 @@
 #'                                verbose = FALSE)
 #'
 #' # Check the empirical simultaneous coverage rate (ESCR)
-#' is_covered <- coverage_ESCR(fit, verbose = TRUE)
+#' is_covered <- coverage_ESCR(fit,  optimize_type ="P", verbose = TRUE)
 #' cat("Coverage indicator:", is_covered, "\n")
 #'
-coverage_ESCR <- function(fit, verbose = FALSE){
+coverage_ESCR <- function(fit,
+                          optimize_type = c("P","G","D"), # P: Polyroot; G: Global-optimize; D: Doptimize;
+                          verbose = FALSE){
 
   fn_Bayes_ECR <- function(x, theta_true, mu_star, cov_theta) {
     x_i <- order_form(x)
@@ -33,6 +35,15 @@ coverage_ESCR <- function(fit, verbose = FALSE){
     lambda <- numerator%*%solve(denominator)
     return(lambda)
   }
+
+  fn_neg_Bayes_ECR <- function(x, theta_true, mu_star, cov_theta) {
+    x_i <- order_form(x)
+    numerator <- abs((x_i)%*%t(theta_true-t(mu_star)))
+    denominator <- sqrt(x_i%*%cov_theta%*%t(t(x_i)))
+    lambda <- numerator%*%solve(denominator)*(-1)
+    return(lambda)
+  }
+
 
   lambda_best <- fit$lambda
   mu_star <- fit$mu_star
@@ -53,14 +64,28 @@ coverage_ESCR <- function(fit, verbose = FALSE){
     cov_mat = cov_theta
   )
 
-  # Check coverage
-  coverage_flag <- ifelse(lambda_best >= result_ECR$maximum, 1, 0)
 
-  if (verbose && coverage_flag == 0) {
-    cat("Not covered: lambda =", round(lambda_best, 4),
-        "< max deviation =", round(result_ECR$maximum, 4),
-        "at x =", round(result_ECR$x_max, 4), "\n")
+  if(optimize_type == "D"){
+    result <- DEoptim::DEoptim(fn = function(x) fn_neg_Bayes_ECR(x, theta_true, mu_star, cov_theta),
+                               lower = a,
+                               upper = b,
+                               control = DEoptim::DEoptim.control(itermax = 200, NP = 50, trace = FALSE)
+    )
+
+    neg_optim <- result$optim$bestval
+    result_ECR <- neg_optim*(-1)
+
+  }else if(optimize_type == "G"){
+    result <- find_global_maximum(fn = function(x) fn_Bayes_ECR(x, theta_true, mu_star, cov_theta),
+                                  a, b, order_form, theta = theta_true, mu_star = mu_star, cov_mat = cov_theta)
+    result_ECR <- result$maximum
+  }else if(optimize_type == "P"){
+    result <- sup_T_Bayes_ESCR(a, b, theta_true, mu_star, cov_mat = cov_theta)
+    result_ECR <- result$maximum
   }
+
+  # Check coverage
+  coverage_flag <- ifelse(lambda_best >= result_ECR, 1, 0)
 
   return(coverage_flag)
 }
