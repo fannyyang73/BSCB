@@ -13,11 +13,8 @@ compute_bscb_conjugate(
   L = 50000,
   AR_setting = 0,
   rho = NULL,
-  mu_setting = 1,
-  P_setting = 1,
-  c_value = 0.001,
-  alpha_0 = 1,
-  optimize_type = "G",
+  hyperparameter = c("empirical", "unit_info", "g_prior"),
+  optimize_type = c("P", "G", "D"),
   theta_true = NULL,
   verbose = TRUE
 )
@@ -61,13 +58,12 @@ Y <- X \%*\% theta_true + epsilon
 fit <- compute_bscb_conjugate(X=X,  Y=Y, alpha = 0.05, a = -5, b = 5, L = 50000,
                               AR_setting = 0, # 0: iid error; 1: autoregressive error
                               rho = NULL,
-                              mu_setting = 1,
-                              P_setting = 1,
-                              c_value = 0.001,
-                              alpha_0 = 1,
-                              optimize_type = "G", # D: Doptimize; G: Global-optimize
+                              hyperparameter = "empirical",
+                              optimize_type = "P",
                               theta_true = theta_true,
                               verbose = FALSE)
+
+
 # View results
 print(fit$lambda)           # Critical value
 print(fit$mu_star)          # Posterior mean of theta

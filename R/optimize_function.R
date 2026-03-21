@@ -315,3 +315,103 @@ integrand_SCB_HMC <- function(x) {
 }
 
 
+find_global_maximum_h_all <- function(a, b, d, cov_mat) {
+
+  # d is a (p+1) vector
+  C <- cov_mat                       # (p+1)×(p+1) matrix C is the covariance matrix
+  p <- length(d) - 1                 # polynomial order，quadratic: p=2, cubic: p=3
+
+  # polynomial multiplication
+  poly_mult <- function(p, q) { # p: order of the polynomial; q: order of another polynomial
+    n <- length(p) + length(q) - 1
+    result <- numeric(n)
+    for (i in seq_along(p))
+      result[i:(i + length(q) - 1)] <- result[i:(i + length(q) - 1)] + p[i] * q
+    result
+  }
+
+  # polynomial derivatives
+  poly_deriv <- function(coef) {
+    n <- length(coef)
+    if (n == 1) return(0)
+    coef[-1] * seq_len(n - 1) # coef[-1]: delete the constant term
+  }
+
+  # N(x) = (d^T x)^2 = (sum d[i] x^(i-1))^2
+  lin_coef <- d
+  N_coef <- poly_mult(lin_coef, lin_coef)
+
+  # D(x) = x^T C x = sum_{i,j} C[i,j] x^(i+j-2)
+  D_coef <- numeric(2 * p + 1)
+  for (i in 1:(p + 1))
+    for (j in 1:(p + 1))
+      D_coef[i + j - 1] <- D_coef[i + j - 1] + C[i, j]
+
+  # h'(x) = 0  <=>  N'D - ND' = 0
+  Np <- poly_deriv(N_coef)
+  Dp <- poly_deriv(D_coef)
+
+  NpD <- poly_mult(Np, D_coef)
+  NDp <- poly_mult(N_coef, Dp)
+
+  len <- max(length(NpD), length(NDp))
+  NpD <- c(NpD, rep(0, len - length(NpD)))
+  NDp <- c(NDp, rep(0, len - length(NDp)))
+  poly_eq <- NpD - NDp
+
+  # find real roots within (a,b)
+  roots <- polyroot(poly_eq)
+  real_roots <- Re(roots[abs(Im(roots)) < 1e-6])
+  interior_roots <- real_roots[real_roots > a & real_roots < b]
+
+
+  candidates <- c(a, b, interior_roots)
+
+  # compute T(x) = sqrt(N(x)/D(x))
+  T_func <- function(x) {
+    xvec <- x^(0:p)
+    num  <- as.numeric(d %*% xvec)^2
+    den  <- as.numeric(t(xvec) %*% C %*% xvec)
+    sqrt(num / den)
+  }
+
+  values  <- sapply(candidates, T_func)
+  max_idx <- which.max(values)
+
+  return(list(
+    maximum        = values[max_idx],
+    x_max          = candidates[max_idx],
+    all_candidates = data.frame(x = candidates, value = values)
+  ))
+}
+
+# To compute the critical constant for BSCB and BPCB; To compute PSCP for BSCB and BPCB
+sup_T_Bayes_PSCP <- function(a, b, theta_hat, mu_star, cov_mat) {
+  d <- theta_hat - as.numeric(mu_star)
+  find_global_maximum_h_all(a, b, d = d, cov_mat = cov_mat)
+}
+
+## To compute ESCR for BSCB and BPCB
+# for BSCB, cov_mat <- cov_theta
+# for BPCB, cov_mat <- scale_mat
+sup_T_Bayes_ESCR <- function(a, b, theta_true, mu_star, cov_mat) {
+  d <- theta_true - as.numeric(mu_star)
+  find_global_maximum_h_all(a, b, d = d, cov_mat = cov_mat)
+}
+
+
+
+## To compute the critical constant for simFSCB
+sup_T_simFSCB <- function(a, b, W_sample, cov_mat) { # cov_mat <- XtX_inv
+  d <- as.numeric(W_sample)
+  find_global_maximum_h_all(a, b, d = d, cov_mat = cov_mat)
+}
+
+## To compute the ESCR for FSCB and FPCB
+sup_T_Freq_ESCR <- function(a, b, theta_true, lm_theta_hat, cov_mat){ # cov_mat <- (as.numeric(S^2) * inv
+  d <- theta_true - as.numeric(lm_theta_hat)
+  find_global_maximum_h_all(a, b, d = d, cov_mat = cov_mat)
+}
+
+
+

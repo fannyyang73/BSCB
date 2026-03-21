@@ -210,8 +210,8 @@ test_that("works with different polynomial degrees", {
   expect_equal(length(fit_cubic$mu_star), 4)
 })
 
-# Test 9: Different optimization methods
-test_that("both optimization methods work", {
+# Test 9: All three optimization methods
+test_that("all optimization methods work", {
   set.seed(123)
   n <- 50
   x <- seq(-5, 5, length.out = n)
@@ -219,12 +219,11 @@ test_that("both optimization methods work", {
   theta_true <- c(-6, -3, 0.25)
   Y <- X %*% theta_true + rnorm(n, 0, 0.2)
 
-  # Skip DEoptim test if package not available
   skip_if_not_installed("DEoptim")
 
-  fit_D <- compute_bscb_conjugate(
+  fit_P <- compute_bscb_conjugate(
     X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 500,
-    optimize_type = "D", verbose = FALSE
+    optimize_type = "P", verbose = FALSE
   )
 
   fit_G <- compute_bscb_conjugate(
@@ -232,12 +231,20 @@ test_that("both optimization methods work", {
     optimize_type = "G", verbose = FALSE
   )
 
-  expect_s3_class(fit_D, "bscb_fit")
-  expect_s3_class(fit_G, "bscb_fit")
+  fit_D <- compute_bscb_conjugate(
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 500,
+    optimize_type = "D", verbose = FALSE
+  )
 
-  # Both should produce reasonable lambdas
-  expect_true(fit_D$lambda > 0)
+  expect_s3_class(fit_P, "bscb_fit")
+  expect_s3_class(fit_G, "bscb_fit")
+  expect_s3_class(fit_D, "bscb_fit")
+  expect_true(fit_P$lambda > 0)
   expect_true(fit_G$lambda > 0)
+  expect_true(fit_D$lambda > 0)
+
+  # P and G should give similar results (both analytic/semi-analytic)
+  expect_true(abs(fit_P$lambda - fit_G$lambda) / fit_G$lambda < 0.10)
 })
 
 # Test 10: Return object structure
@@ -254,18 +261,18 @@ test_that("return object has correct structure", {
   )
 
   # Check all required fields
-  expect_true("lambda" %in% names(fit))
-  expect_true("lower_bound" %in% names(fit))
-  expect_true("upper_bound" %in% names(fit))
-  expect_true("mu_star" %in% names(fit))
-  expect_true("cov_theta" %in% names(fit))
-  expect_true("dof" %in% names(fit))
-  expect_true("x_range" %in% names(fit))
-  expect_true("order_form" %in% names(fit))
-  expect_true("theta_true" %in% names(fit))
-  expect_true("method" %in% names(fit))
-  expect_true("data" %in% names(fit))
-  expect_true("params" %in% names(fit))
+  expect_true("lambda"         %in% names(fit))
+  expect_true("lower_bound"   %in% names(fit))
+  expect_true("upper_bound"   %in% names(fit))
+  expect_true("mu_star"       %in% names(fit))
+  expect_true("cov_theta"     %in% names(fit))
+  expect_true("dof"           %in% names(fit))
+  expect_true("x_range"       %in% names(fit))
+  expect_true("order_form"    %in% names(fit))
+  expect_true("theta_true"    %in% names(fit))
+  expect_true("method"        %in% names(fit))
+  expect_true("data"          %in% names(fit))
+  expect_true("params"        %in% names(fit))
   expect_true("lambda_samples" %in% names(fit))
 
   # Check metadata
@@ -273,6 +280,12 @@ test_that("return object has correct structure", {
   expect_equal(fit$n, n)
   expect_equal(fit$p, 2)
   expect_equal(fit$alpha, 0.05)
+
+  # Check params subfields reflect new interface
+  expect_true("hyperparameter" %in% names(fit$params))
+  expect_true("optimize_type"  %in% names(fit$params))
+  expect_equal(fit$params$hyperparameter, "empirical")  # default
+  expect_equal(fit$params$optimize_type,  "P")          # default
 })
 
 # Test 11: Lambda samples
@@ -292,38 +305,69 @@ test_that("lambda samples are stored correctly", {
   expect_equal(length(fit$lambda_samples), L)
   expect_true(all(fit$lambda_samples > 0))
 
-  # Lambda should be the (1-alpha) quantile
+  # Lambda should be the (1-alpha) quantile of samples
   manual_lambda <- quantile(fit$lambda_samples, probs = 0.95)
   expect_equal(fit$lambda, as.numeric(manual_lambda))
 })
 
-# Test 12: Prior settings
-test_that("different prior settings work", {
+# Test 12: Different hyperparameter settings
+test_that("different hyperparameter settings work", {
   set.seed(123)
   n <- 50
   x <- seq(-5, 5, length.out = n)
   X <- cbind(1, x, x^2)
   Y <- rnorm(n)
 
-  # P_setting = 1
-  fit_P1 <- compute_bscb_conjugate(
+  fit_emp <- compute_bscb_conjugate(
     X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
-    P_setting = 1, c_value = 0.001, verbose = FALSE
+    hyperparameter = "empirical", verbose = FALSE
   )
 
-  # P_setting = 2
-  fit_P2 <- compute_bscb_conjugate(
+  fit_unit <- compute_bscb_conjugate(
     X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
-    P_setting = 2, verbose = FALSE
+    hyperparameter = "unit_info", verbose = FALSE
   )
 
-  expect_equal(fit_P1$params$P_setting, 1)
-  expect_equal(fit_P2$params$P_setting, 2)
-  expect_s3_class(fit_P1, "bscb_fit")
-  expect_s3_class(fit_P2, "bscb_fit")
+  fit_g <- compute_bscb_conjugate(
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+    hyperparameter = "g_prior", verbose = FALSE
+  )
+
+  expect_s3_class(fit_emp,  "bscb_fit")
+  expect_s3_class(fit_unit, "bscb_fit")
+  expect_s3_class(fit_g,    "bscb_fit")
+
+  expect_equal(fit_emp$params$hyperparameter,  "empirical")
+  expect_equal(fit_unit$params$hyperparameter, "unit_info")
+  expect_equal(fit_g$params$hyperparameter,    "g_prior")
+
+  # Three settings should produce different lambdas
+  expect_false(isTRUE(all.equal(fit_emp$lambda, fit_unit$lambda)))
+  expect_false(isTRUE(all.equal(fit_emp$lambda, fit_g$lambda)))
 })
 
-# Test 13: Coverage simulation (integration test)
+# Test 13: Invalid hyperparameter and optimize_type are rejected
+test_that("invalid hyperparameter and optimize_type are rejected", {
+  set.seed(123)
+  n <- 50
+  x <- seq(-5, 5, length.out = n)
+  X <- cbind(1, x, x^2)
+  Y <- rnorm(n)
+
+  expect_error(
+    compute_bscb_conjugate(
+      X = X, Y = Y, hyperparameter = "bad_prior", verbose = FALSE
+    )
+  )
+
+  expect_error(
+    compute_bscb_conjugate(
+      X = X, Y = Y, optimize_type = "X", verbose = FALSE
+    )
+  )
+})
+
+# Test 14: Coverage simulation (integration test)
 test_that("empirical coverage rate is reasonable", {
   skip_on_cran()  # This test is slow
 
@@ -347,22 +391,22 @@ test_that("empirical coverage rate is reasonable", {
 
     # Check coverage at multiple points
     x_check <- seq(-5, 5, length.out = 20)
-    X_check <- cbind(1, x_check, x_check^2)
-    y_true <- X_check %*% theta_true
-    lower <- fit$lower_bound(x_check)
-    upper <- fit$upper_bound(x_check)
+    X_check  <- cbind(1, x_check, x_check^2)
+    y_true   <- X_check %*% theta_true
+    lower    <- fit$lower_bound(x_check)
+    upper    <- fit$upper_bound(x_check)
 
-    covered <- all(y_true >= lower & y_true <= upper)
+    covered        <- all(y_true >= lower & y_true <= upper)
     coverage_count <- coverage_count + covered
   }
 
   coverage_rate <- coverage_count / n_sim
 
-  # Should be approximately 0.95, allow wide tolerance for small n_sim
+  # Should be approximately 0.95; allow wide tolerance for small n_sim
   expect_true(coverage_rate >= 0.80 && coverage_rate <= 1.0)
 })
 
-# Test 14: Consistency of results with same seed
+# Test 15: Consistency of results with same seed
 test_that("results are reproducible with same seed", {
   n <- 50
   x <- seq(-5, 5, length.out = n)
@@ -381,12 +425,12 @@ test_that("results are reproducible with same seed", {
     verbose = FALSE
   )
 
-  expect_equal(fit1$lambda, fit2$lambda)
-  expect_equal(fit1$mu_star, fit2$mu_star)
+  expect_equal(fit1$lambda,         fit2$lambda)
+  expect_equal(fit1$mu_star,        fit2$mu_star)
   expect_equal(fit1$lambda_samples, fit2$lambda_samples)
 })
 
-# Test 15: Verbose output
+# Test 16: Verbose output
 test_that("verbose mode produces messages", {
   set.seed(123)
   n <- 50

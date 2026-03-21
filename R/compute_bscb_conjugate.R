@@ -47,13 +47,12 @@
 #' fit <- compute_bscb_conjugate(X=X,  Y=Y, alpha = 0.05, a = -5, b = 5, L = 50000,
 #'                               AR_setting = 0, # 0: iid error; 1: autoregressive error
 #'                               rho = NULL,
-#'                               mu_setting = 1,
-#'                               P_setting = 1,
-#'                               c_value = 0.001,
-#'                               alpha_0 = 1,
-#'                               optimize_type = "G", # D: Doptimize; G: Global-optimize
+#'                               hyperparameter = "empirical",
+#'                               optimize_type = "P",
 #'                               theta_true = theta_true,
 #'                               verbose = FALSE)
+#'
+#'
 #' # View results
 #' print(fit$lambda)           # Critical value
 #' print(fit$mu_star)          # Posterior mean of theta
@@ -97,20 +96,20 @@ compute_bscb_conjugate <- function(X, # X is a n\times (p+1) matrix
                                    L = 50000,
                                    AR_setting = 0, # 0: iid error; 1: autoregressive error
                                    rho = NULL,
-                                   mu_setting = 1,
-                                   P_setting = 1,
-                                   c_value = 0.001,
-                                   alpha_0 = 1,
-                                   optimize_type = "G", # D: Doptimize; G: Global-optimize
+                                   hyperparameter = c("empirical", "unit_info", "g_prior"),
+                                   optimize_type = c("P","G","D"), # P: Polyroot; G: Global-optimize; D: Doptimize;
                                    theta_true = NULL,
                                    verbose = TRUE
                                    ){
 
+  hyperparameter <- match.arg(hyperparameter)
+  optimize_type <- match.arg(optimize_type)
   # ============ Input validation ============
   if (!is.matrix(X)) X <- as.matrix(X)
   if (!is.numeric(Y)) Y <- as.numeric(Y)
   n <- nrow(X)
   p <- ncol(X) - 1
+  q <- ncol(X)          # q = p + 1 (intercept included)
   # ============ Define order form function ============
 
   order_form <- create_order_form(p)
@@ -139,67 +138,12 @@ compute_bscb_conjugate <- function(X, # X is a n\times (p+1) matrix
   V_inv <- solve(V)
 
   # ============ Compute posterior parameters ============
-  XtVX <- t(X) %*% V_inv %*% X
-  XtVX_inv <- solve(XtVX)
+  ng <- compute_NG_param(X = X, Y = Y, V = V, hyperparameter = hyperparameter)
 
-  # Estimate mu based on mu_setting
-  if (mu_setting == 1) {
-    # OLS
-    mu <- XtVX_inv %*% t(X) %*% V_inv %*% Y
-  } else if (mu_setting == 2) {
-    # Huber regression
-    if (!requireNamespace("MASS", quietly = TRUE)) {
-      stop("Package 'MASS' required for Huber regression")
-    }
-    k_vals <- seq(1, 3, length.out = 10)
-    cv_result <- cv_huber(X[, -1, drop = FALSE], Y, k_vals)
-    huber_model <- MASS::rlm(Y ~ X[, -1], psi = MASS::psi.bisquare)
-    mu <- as.matrix(coef(huber_model))
-  } else if (mu_setting == 3) {
-    # Ridge regression
-    if (!requireNamespace("glmnet", quietly = TRUE)) {
-      stop("Package 'glmnet' required for Ridge regression")
-    }
-    cv_ridge <- glmnet::cv.glmnet(
-      x = X[, -1, drop = FALSE],
-      y = Y,
-      alpha = 0,
-      lambda = seq(0.01, 1.5, 0.01)
-    )
-    mu <- as.matrix(coef(cv_ridge, s = "lambda.min"))
-  } else {
-    stop("mu_setting must be 1, 2, or 3")
-  }
-
-  # Compute variance and precision matrix
-  error <- Y - X %*% mu
-  variance <- as.numeric(t(error) %*% V_inv %*% error / (n - p - 1))
-
-  if (P_setting == 1) {
-    cal_P <- c_value * diag(p + 1)
-  } else if (P_setting == 2) {
-    l <- variance / sum(diag(XtVX))
-    cal_P <- solve(XtVX + l * diag(p + 1))
-  } else {
-    stop("P_setting must be 1 or 2")
-  }
-
-
-  # Posterior mean and covariance
-  part1_1 <- solve(XtVX + cal_P)
-  part1_2 <- t(X) %*% V_inv %*% Y + cal_P %*% mu
-  mu_star <- part1_1 %*% part1_2
-
-  beta_0 <- variance
-  part2_1 <- (XtVX + cal_P) * (n + 2 * alpha_0)
-  part2_2 <- 2 * beta_0 + t(Y) %*% V_inv %*% Y + t(mu) %*% cal_P %*% mu - t(part1_2) %*% part1_1 %*% part1_2
-  the_scalar <- 1 / part2_2
-  D_star <- part2_1 * drop(the_scalar)
-
-  dof <- n + 2 * alpha_0
-  the_value <- dof / (dof - 2)
-  cov_theta <- drop(the_value) * solve(D_star)
-  scale_mat <- solve(D_star)
+  mu_star   <- ng$marginal_pos_theta_mean    # marginal posterior of theta: mean
+  scale_mat <- ng$marginal_pos_theta_scale   # marginal posterior of theta: scale matrix
+  dof       <- ng$marginal_pos_theta_dof     # marginal posterior of theta: degrees of freedom
+  cov_theta <- (dof / (dof - 2)) * scale_mat  # marginal posterior of theta: covariance matrix
 
   # ============ Compute lambda via Monte Carlo ============
   if (verbose) message("Computing lambda via Monte Carlo sampling...")
@@ -238,6 +182,9 @@ compute_bscb_conjugate <- function(X, # X is a n\times (p+1) matrix
     }else if(optimize_type == "G"){
       result <- find_global_maximum(fn = function(x) fn_Bayes_PCP(x, theta_hat, mu_star, cov_theta),
                                     a, b, order_form, theta = theta_hat, mu_star = mu_star, cov_mat = cov_theta)
+      lambda_samples[j] <- result$maximum
+    }else if(optimize_type == "P"){
+      result <- sup_T_Bayes_PSCP(a, b, theta_hat, mu_star, cov_mat = cov_theta)
       lambda_samples[j] <- result$maximum
     }
   }
@@ -311,10 +258,7 @@ compute_bscb_conjugate <- function(X, # X is a n\times (p+1) matrix
       params = list(
         AR_setting = AR_setting,
         rho = rho,
-        mu_setting = mu_setting,
-        P_setting = P_setting,
-        c_value = c_value,
-        alpha_0 = alpha_0,
+        hyperparameter = hyperparameter, # "empirical" / "unit_info" / "g_prior"
         L = L,
         optimize_type = optimize_type
       )
