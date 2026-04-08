@@ -13,12 +13,19 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Title of the manuscript
+# BSCB
 
 <!-- badges: start -->
 <!-- badges: end -->
 
+## Title of the manuscript: 
+
 Bayesian Simultaneous Credible Bands for Polynomial Regression
+
+The goal of BSCB is to quantify the uncertainty in an unknown regression functions over a given continuous range. The method consists of 
+This manuscript proposes a novel framework for constructing a $(1-\alpha)$ two-sided exact BSCB for the polynomial model over the given covariate interval $(a,b)$. Three approaches have been developed based on (i) the normal-gamma conjugate prior, (ii) the independent Jeffreys prior for objective inference, and (iii) the non-conjugate prior implemented by the Hamiltonian Monte Carlo (HMC) method. 
+
+
 
 ## Authors:
 
@@ -67,35 +74,17 @@ pak::pak("fannyyang73/BSCB")
 ## basic example code
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
+## R package
 
-```{r cars}
-summary(cars)
-```
+A full demo for how to use the R package BSCB is provided in [here](https://github.com/fannyyang73/BSCB/tree/main/demo/BSCB_demo.Rmd).
 
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.
-
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.
-
-# ConsensusVelo
-
-<!-- badges: start -->
-<!-- badges: end -->
-
-The goal of ConsensusVelo is to estimate RNA velocity with sound uncertainty quantification using Bayesian methods. The method consists of fitting individual genes based on the unspliced and spliced counts, assuming a time-dependent transcription rate and non-trivial initial conditions. A post-processing step is provided to combine information across genes and estimate a gene-shared latent time, which enables interpretation of cell temporal orders with uncertainty.
-
-A full demo for how to use the R package is provided in [here](https://github.com/huizizhang949/ConsensusVelo/blob/main/demo/demo.Rmd).
-
-You can install the development version of ConsensusVelo from [GitHub](https://github.com/) with:
+You can install the development version of BSCB from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("huizizhang949/ConsensusVelo")
+devtools::install_github("fannyyang73/BSCB")
 ```
+
+
+
 
