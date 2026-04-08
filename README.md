@@ -39,17 +39,22 @@ below.
 
 ## Main Manuscript
 
-1.  Illustrative Example - Section 4
-    - Reproduce Table 3, Figure 3 and the numerical results in the
-      manuscript:
-      - Use the file ‘Real_data_example.R’.
-2.  Simulation Study – Section 3
-    - Reproduce Figure 2 and Table 2 in the manuscript:
-      - Use the file ‘Simulation_study.R’.
-      - Input the values of confl ($1-\alpha$), Cgamma ($\gamma$), $n$
-        and $s$ to compute the values of critical constants $c$ for
-        symmetric SCBs and $(c_1,c_2)$ for asymmetric SCBs, and
-        $r$-ratios.
+1.  Simulation Study – Section 4
+    - Reproduce Table 1 in the manuscript:
+      - Use the file
+        [‘Run_Poly_p=2_doParallel.R’](https://github.com/fannyyang73/BSCB/tree/main/inst/paper/simulations/Example_1/p%3D2/code_p%3D2/Run_Poly_p=2_doParallel.R)
+        to reproduce results for p=2.
+      - Use the file
+        [‘Run_Poly_p=3_doParallel.R’](https://github.com/fannyyang73/BSCB/tree/main/inst/paper/simulations/Example_1/p%3D3/code_p%3D3/Run_Poly_p=3_doParallel.R)
+        to reproduce results for p=3.
+
+<!-- 1. Illustrative Example - Section 4 -->
+<!--    * Reproduce Table 3, Figure 3 and the numerical results in the manuscript: -->
+<!--      * Use the file ‘Real_data_example.R’. -->
+<!-- 2. Simulation Study – Section 3 -->
+<!--    * Reproduce Figure 2 and Table 2 in the manuscript: -->
+<!--      * Use the file ‘Simulation_study.R’. -->
+<!--      * Input the values of confl ($1-\alpha$), Cgamma ($\gamma$), $n$ and $s$ to compute the values of critical constants $c$ for symmetric SCBs and $(c_1,c_2)$ for asymmetric SCBs, and $r$-ratios. -->
 
 ``` r
 # install.packages("pak")
