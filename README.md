@@ -43,10 +43,15 @@ below.
     - Reproduce Table 1 in the manuscript:
       - Use the file
         [‘Run_Poly_p=2_doParallel.R’](https://github.com/fannyyang73/BSCB/tree/main/inst/paper/simulations/Example_1/p%3D2/code_p%3D2/Run_Poly_p=2_doParallel.R)
-        to reproduce results for p=2.
+        to reproduce results for p=2 in Example 1.
       - Use the file
         [‘Run_Poly_p=3_doParallel.R’](https://github.com/fannyyang73/BSCB/tree/main/inst/paper/simulations/Example_1/p%3D3/code_p%3D3/Run_Poly_p=3_doParallel.R)
-        to reproduce results for p=3.
+        to reproduce results for p=3 in Example 1.
+    - Reproduce Table 2 in the manuscript:
+      - Use the file
+        [‘Run_Poly_p=2_doParallel.R’](https://github.com/fannyyang73/BSCB/tree/main/inst/paper/simulations/Example_2/code_p%3D2/Run_Poly_p=2_doParallel.R)
+        to reproduce results for p=2 in Example 2.
+      - Reproduce Figure 1 in the manuscript:
 
 <!-- 1. Illustrative Example - Section 4 -->
 <!--    * Reproduce Table 3, Figure 3 and the numerical results in the manuscript: -->
