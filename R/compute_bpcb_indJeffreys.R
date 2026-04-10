@@ -1,4 +1,4 @@
-#' BPCB-I: the Bayesian pointwise credible band using the independent Jeffreys prior
+#' BPCB-I-J: the Bayesian pointwise credible band using the independent Jeffreys prior
 #'
 #' @param X
 #' @param Y
