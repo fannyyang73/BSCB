@@ -18,82 +18,90 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-## Title of the manuscript: 
+## Overview
 
-Bayesian Simultaneous Credible Bands for Polynomial Regression
+**BSCB** provides methods for constructing Bayesian Simultaneous Credible 
+Bands (BSCB) for polynomial regression models. The package implements three 
+approaches based on different prior specifications:
 
-The goal of BSCB is to quantify the uncertainty in an unknown regression functions over a given continuous range. The method consists of 
-This manuscript proposes a novel framework for constructing a $(1-\alpha)$ two-sided exact BSCB for the polynomial model over the given covariate interval $(a,b)$. Three approaches have been developed based on (i) the normal-gamma conjugate prior, (ii) the independent Jeffreys prior for objective inference, and (iii) the non-conjugate prior implemented by the Hamiltonian Monte Carlo (HMC) method. 
+- **BSCB-C**: Normal-Gamma conjugate prior (empirical Bayes, unit-information, or g-prior)
+- **BSCB-J**: Independent Jeffreys prior
+- **BSCB-H**: Non-conjugate prior via Hamiltonian Monte Carlo
 
+A full demo is available [here](https://github.com/fannyyang73/BSCB/tree/main/demo/BSCB_demo.Rmd).
 
+## Installation
 
-## Authors:
-
-Fei Yang, Yang Han, and Wei Liu
-
-## Configurations:
-* R version 4.4.2 (2024-10-31)
-* Platform: aarch64-apple-darwin20
-* Running under: macOS Ventura 13.7.8
-* Running Environment: The Computational Shared Facility (a High-Performance Computing cluster at the University of Manchester) 
-
-## Execution:
-To use the codes for reproducing numerical results, tables and figures given in the paper and its supplement, please follow the instructions below.
-
-## Main Manuscript
-
-1. Simulation Study – Section 4
-   * Reproduce Table 1 in the manuscript:
-	    * Use the file [‘Run_Poly_p=2_doParallel.R’](https://github.com/fannyyang73/BSCB/tree/main/inst/paper/simulations/Example_1/p%3D2/code_p%3D2/Run_Poly_p=2_doParallel.R) to reproduce results for p=2 in Example 1.
-	    * Use the file [‘Run_Poly_p=3_doParallel.R’](https://github.com/fannyyang73/BSCB/tree/main/inst/paper/simulations/Example_1/p%3D3/code_p%3D3/Run_Poly_p=3_doParallel.R) to reproduce results for p=3 in Example 1.
-   * Reproduce Table 2 in the manuscript:
-      * Use the file [‘Run_Poly_p=2_doParallel.R’](https://github.com/fannyyang73/BSCB/tree/main/inst/paper/simulations/Example_2/code_p%3D2/Run_Poly_p=2_doParallel.R) to reproduce results for p=2 in Example 2.
-      * Reproduce Figure 1 in the manuscript:
-	  
-
-<!-- 1. Illustrative Example - Section 4 -->
-<!-- 	* Reproduce Table 3, Figure 3 and the numerical results in the manuscript: -->
-<!-- 	  * Use the file ‘Real_data_example.R’. -->
-
-<!-- 2. Simulation Study – Section 3 -->
-<!-- 	* Reproduce Figure 2 and Table 2 in the manuscript: -->
-<!-- 	  * Use the file ‘Simulation_study.R’. -->
-<!-- 	  * Input the values of confl ($1-\alpha$), Cgamma ($\gamma$), $n$ and $s$ to compute the values of critical constants $c$ for symmetric SCBs and $(c_1,c_2)$ for asymmetric SCBs, and $r$-ratios. -->
-
-``` r
-# install.packages("pak")
-pak::pak("fannyyang73/BSCB")
-```
-
-## Supplementary Materials
-
-3. Computational Costs
-	* Reproduce Tables 1-2 in the supplementary material:
-	  * Use the file ‘Computational_cost_supple.R’.
-	  
-4. Additional Simulation Results 
-	* Reproduce Tables 3-4 in the supplementary material:
-	  * Use the file ‘Simulation_study_supple.R’.
-	  * Input the values of confl ($1-\alpha$), Cgamma ($\gamma$), $n$ and $s$ to compute the values of critical constants $c$ for symmetric SCBs and $(c_1,c_2)$ for asymmetric SCBs, and $r$-ratios.
-
-
-
-```{r example}
-#library(BSCB)
-## basic example code
-```
-
-## R package
-
-A full demo for how to use the R package BSCB is provided in [here](https://github.com/fannyyang73/BSCB/tree/main/demo/BSCB_demo.Rmd).
-
-You can install the development version of BSCB from [GitHub](https://github.com/) with:
-
-``` r
+```r
 # install.packages("devtools")
 devtools::install_github("fannyyang73/BSCB")
 ```
 
+## Quick Start
 
+```r
+library(BSCB)
+
+# Simulate data from a quadratic model
+set.seed(123)
+n <- 50
+x <- seq(-5, 5, length.out = n)
+X <- cbind(1, x, x^2)
+theta_true <- c(-6, -3, 0.25)
+Y <- X %*% theta_true + rnorm(n, sd = 0.2)
+
+# Fit BSCB with Normal-Gamma conjugate prior
+fit <- compute_bscb_conjugate(
+  X             = X,
+  Y             = Y,
+  alpha         = 0.05,       # 1 - 0.05 = 95% credible band
+  a             = -5,         # left endpoint of covariate domain
+  b             =  5,         # right endpoint of covariate domain
+  L             = 50000,      # Monte Carlo draws
+  hyperparameter = "g_prior", # "empirical", "unit_info", or "g_prior"
+  optimize_type  = "P"        # "P" = polyroot (recommended)
+)
+
+# Critical constant
+fit$lambda
+
+# Evaluate the band at a grid of x values
+x_seq     <- seq(-5, 5, length.out = 500)
+lower_vec <- fit$lower_bound(x_seq)
+upper_vec <- fit$upper_bound(x_seq)
+
+# Plot
+plot(x_seq, lower_vec, type = "l", col = "red", lty = 2, lwd = 2,
+     ylim = range(c(lower_vec, upper_vec, Y)),
+     xlab = "x", ylab = "y",
+     main = "95% Bayesian Simultaneous Credible Band")
+lines(x_seq, upper_vec, col = "red", lty = 2, lwd = 2)
+lines(x_seq, cbind(1, x_seq, x_seq^2) %*% theta_true, col = "blue", lwd = 2)
+points(x, Y, pch = 16, col = "gray")
+legend("topright",
+       legend = c("True curve", "Data", "95% BSCB"),
+       col    = c("blue", "gray", "red"),
+       lty    = c(1, NA, 2),
+       pch    = c(NA, 16, NA))
+```
+
+## Main Functions
+
+| Function | Description |
+|----------|-------------|
+| `compute_bscb_conjugate()` | BSCB under Normal-Gamma conjugate prior |
+| `compute_bpcb_indJeffreys()` | BSCB under independent Jeffreys prior |
+| `coverage_ESCR()` | Empirical Simultaneous Coverage Rate (ESCR) |
+| `compute_NG_param()` | Compute Normal-Gamma posterior parameters |
+| `compute_IJ_param()` | Compute independent Jeffreys posterior parameters |
+
+## Key Arguments
+
+| Argument | Description | Options |
+|----------|-------------|---------|
+| `hyperparameter` | Hyperparameter specification | `"empirical"`, `"unit_info"`, `"g_prior"` |
+| `optimize_type` | Method for computing sup T(x) | `"P"` (polyroot, recommended), `"G"` (global), `"D"` (DEoptim) |
+| `AR_setting` | Error structure | `0` = i.i.d., `1` = AR(1) |
+| `L` | Monte Carlo draws for lambda | default `50000` |
 
 
