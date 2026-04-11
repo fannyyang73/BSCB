@@ -1,33 +1,64 @@
-#' BSCB-C: the Bayesian simultaneous credible band using the normal-gamma conjugate prior
+#' BSCB-C: Bayesian Simultaneous Credible Band under the Normal-Gamma Conjugate Prior
 #'
-#' @param X
-#' @param Y
-#' @param alpha
-#' @param a
-#' @param b
-#' @param L
-#' @param AR_setting
-#' @param rho
-#' @param hyperparameter
-#' @param optimize_type
-#' @param theta_true True parameter values
-#' @param verbose
+#' Constructs a \eqn{(1 - \alpha)} two-sided Bayesian simultaneous credible band
+#' for polynomial regression using the normal-gamma conjugate prior. The marginal
+#' posterior of \eqn{\theta} follows a multivariate-t distribution. The critical
+#' constant \eqn{\lambda} is estimated via Monte Carlo sampling.
 #'
-#' @return A list of class "bscb_fit" containing:
-#' \item{lambda}{The critical value for the credible band}
-#' \item{lower_bound}{Function to compute lower band at x}
-#' \item{upper_bound}{Function to compute upper band at x}
-#' \item{mu_star}{Posterior mean of theta}
-#' \item{cov_theta}{Posterior covariance matrix of theta}
-#' \item{theta_true}{True parameters (if provided)}
-#' \item{order_form}{Function to create design vector}
-#' \item{x_range}{Range of x values}
-#' \item{data}{Original data (X and Y)}
-#' \item{lambda_samples}{Monte Carlo samples used to compute lambda}
+#' @param X Numeric matrix of dimension \eqn{n \times (p+1)}. Design matrix
+#'   with intercept in the first column.
+#' @param Y Numeric vector of length \eqn{n}. Response variable.
+#' @param alpha Numeric. Nominal mis-coverage level; the band targets
+#'   \eqn{1 - \alpha} simultaneous coverage. Default is \code{0.05}.
+#' @param a Numeric. Left endpoint of the covariate domain \eqn{[a, b]}.
+#'   Inferred from \code{X[, 2]} if \code{NULL}.
+#' @param b Numeric. Right endpoint of the covariate domain \eqn{[a, b]}.
+#'   Inferred from \code{X[, 2]} if \code{NULL}.
+#' @param L Integer. Number of Monte Carlo draws for computing the critical
+#'   constant \eqn{\lambda}. Default is \code{50000}.
+#' @param AR_setting Integer. Error covariance structure:
+#'   \code{0} = i.i.d. errors (default);
+#'   \code{1} = AR(1) errors.
+#' @param rho Numeric. AR(1) coefficient. Required when \code{AR_setting = 1}.
+#' @param hyperparameter Character. Hyperparameter specification for the
+#'   Normal-Gamma prior:
+#'   \code{"empirical"} = empirical Bayes;
+#'   \code{"unit_info"} = unit-information prior;
+#'   \code{"g_prior"} = Zellner's g-prior.
+#' @param optimize_type Character. Method for computing
+#'   \eqn{\sup_{x \in [a,b]} T(x)}:
+#'   \code{"P"} = polyroot analytical method (recommended);
+#'   \code{"G"} = global optimisation;
+#'   \code{"D"} = differential evolution (DEoptim).
+#' @param theta_true Numeric vector of length \eqn{p + 1}. True regression
+#'   coefficients. Optional; stored in the output for diagnostic use.
+#' @param verbose Logical. If \code{TRUE} (default), prints progress messages
+#'   including the value of the critical constant lambda.
+#'
+#' @return An object of class \code{"bscb_fit"}, a list containing:
+#' \describe{
+#'   \item{lambda}{Critical constant for the credible band.}
+#'   \item{lower_bound}{Function: computes the lower band at a given \code{x}.}
+#'   \item{upper_bound}{Function: computes the upper band at a given \code{x}.}
+#'   \item{mu_star}{Posterior mean of \eqn{\theta}.}
+#'   \item{cov_theta}{Posterior covariance matrix of \eqn{\theta}.}
+#'   \item{dof}{Degrees of freedom of the marginal posterior.}
+#'   \item{x_range}{Covariate domain \eqn{[a, b]}.}
+#'   \item{lambda_samples}{Monte Carlo samples used to compute \eqn{\lambda}.}
+#'   \item{theta_true}{True parameters (if supplied).}
+#'   \item{method}{Character string \code{"conjugate"}.}
+#'   \item{params}{List of configuration parameters.}
+#' }
+#'
+#' @seealso \code{\link{compute_bscb_ind_jeffreys}} for the independent Jeffreys
+#'   prior version, \code{\link{compute_bpcb_ind_jeffreys}} for the pointwise band.
+#'
 #' @export
+#'
 #'
 #' @examples
 #' # Example 1: Simple quadratic model with i.i.d. errors
+#' \donttest{
 #' set.seed(123)
 #' n <- 50
 #' p <- 2
@@ -41,7 +72,7 @@
 #' Y <- X %*% theta_true + epsilon
 #'
 #' # Compute BSCB-C with default settings
-#' fit <- compute_bscb_conjugate(X=X,  Y=Y, alpha = 0.05, a = -5, b = 5, L = 50000,
+#' fit <- compute_bscb_conjugate(X=X,  Y=Y, alpha = 0.05, a = -5, b = 5, L = 500000,
 #'                               AR_setting = 0, # 0: iid error; 1: autoregressive error
 #'                               rho = NULL,
 #'                               hyperparameter = "empirical",
@@ -82,6 +113,7 @@
 #'        lty = c(1, NA, 2),
 #'        pch = c(NA, 16, NA),
 #'        lwd = 2)
+#' }
 
 
 

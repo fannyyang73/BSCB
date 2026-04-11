@@ -4,6 +4,8 @@
 #' use in simulation studies of Bayesian simultaneous credible bands.
 #' The design can be either equally-spaced (ES) or D-optimal (DO).
 #'
+#' @importFrom OptimalDesign od_KL
+#'
 #' @param p Integer. Polynomial degree. Must be 1, 2, or 3.
 #' @param n Integer. Sample size.
 #' @param e_sd Numeric. Error standard deviation (sigma in the paper).

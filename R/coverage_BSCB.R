@@ -1,6 +1,13 @@
 #' Compute the coverage of BSCB
 #' @param fit A BSCB fit object containing lambda, mu_star, cov_theta, theta_true, x_range, order_form
 #' @param verbose Logical, whether to print rejection message (default: FALSE)
+#' @param optimize_type Character. Method for computing
+#'   \eqn{\sup_{x \in [a,b]} T(x)}:
+#'   \code{"P"} = polyroot function (recommended);
+#'   \code{"G"} = global optimisation;
+#'   \code{"D"} = Doptimize function from package DEoptim.
+#' @param verbose Logical. If \code{TRUE} (default), prints the value of the
+#'   critical constant lambda.
 #'
 #' @return Integer: 1 if covered, 0 if not covered
 #' @export

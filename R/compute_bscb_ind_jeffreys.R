@@ -1,91 +1,87 @@
-#' BPCB-I-J: the Bayesian pointwise credible band using the independent Jeffreys prior
+#' BSCB-J: Bayesian Simultaneous Credible Band under the Independent Jeffreys Prior
 #'
-#' @param X
-#' @param Y
-#' @param alpha
-#' @param a
-#' @param b
-#' @param L
-#' @param AR_setting
-#' @param rho
-
-#' @param optimize_type
-#' @param theta_true True parameter values
-#' @param verbose
+#' Constructs a \eqn{(1 - \alpha)} two-sided Bayesian simultaneous credible band
+#' for polynomial regression using the independent Jeffreys prior. The marginal
+#' posterior of \eqn{\theta} follows a multivariate-t distribution with degrees
+#' of freedom \eqn{n - p - 1}.
 #'
-#' @return A list of class "bscb_fit" containing:
-#' \item{lambda}{The critical value for the credible band}
-#' \item{lower_bound}{Function to compute lower band at x}
-#' \item{upper_bound}{Function to compute upper band at x}
-#' \item{mu_star}{Posterior mean of theta}
-#' \item{cov_theta}{Posterior covariance matrix of theta}
-#' \item{theta_true}{True parameters (if provided)}
-#' \item{order_form}{Function to create design vector}
-#' \item{x_range}{Range of x values}
-#' \item{data}{Original data (X and Y)}
-#' \item{lambda_samples}{Monte Carlo samples used to compute lambda}
+#' @param X Numeric matrix of dimension \eqn{n \times (p+1)}. Design matrix
+#'   with intercept in the first column.
+#' @param Y Numeric vector of length \eqn{n}. Response variable.
+#' @param alpha Numeric. Nominal mis-coverage level; the band targets
+#'   \eqn{1 - \alpha} simultaneous coverage. Default is \code{0.05}.
+#' @param a Numeric. Left endpoint of the covariate domain \eqn{[a, b]}.
+#'   Inferred from \code{X[, 2]} if \code{NULL}.
+#' @param b Numeric. Right endpoint of the covariate domain \eqn{[a, b]}.
+#'   Inferred from \code{X[, 2]} if \code{NULL}.
+#' @param L Integer. Number of Monte Carlo draws for computing the critical
+#'   constant \eqn{\lambda}. Default is \code{50000}.
+#' @param AR_setting Integer. Error covariance structure:
+#'   \code{0} = i.i.d. errors (default);
+#'   \code{1} = AR(1) errors.
+#' @param rho Numeric. AR(1) coefficient. Required when \code{AR_setting = 1}.
+#' @param optimize_type Character. Method for computing
+#'   \eqn{\sup_{x \in [a,b]} T(x)}:
+#'   \code{"P"} = polyroot analytical method (recommended);
+#'   \code{"G"} = global optimisation;
+#'   \code{"D"} = differential evolution (DEoptim).
+#' @param theta_true Numeric vector of length \eqn{p + 1}. True regression
+#'   coefficients. Optional; stored in the output for diagnostic use.
+#' @param verbose Logical. If \code{TRUE} (default), prints progress messages.
+#'
+#' @return An object of class \code{"bscb_fit"}, a list containing:
+#' \describe{
+#'   \item{lambda}{Critical constant for the credible band.}
+#'   \item{lower_bound}{Function: computes the lower band at a given \code{x}.}
+#'   \item{upper_bound}{Function: computes the upper band at a given \code{x}.}
+#'   \item{mu_star}{Posterior mean of \eqn{\theta} (GLS estimate).}
+#'   \item{cov_theta}{Posterior covariance matrix of \eqn{\theta}.}
+#'   \item{dof}{Degrees of freedom of the marginal posterior (\eqn{n - p - 1}).}
+#'   \item{x_range}{Covariate domain \eqn{[a, b]}.}
+#'   \item{lambda_samples}{Monte Carlo samples used to compute \eqn{\lambda}.}
+#'   \item{theta_true}{True parameters (if supplied).}
+#'   \item{method}{Character string \code{"independent_jeffreys"}.}
+#'   \item{params}{List of configuration parameters.}
+#' }
+#'
 #' @export
 #'
 #' @examples
-#' # Example 1: Simple quadratic model with i.i.d. errors
+#' # Quadratic model with i.i.d. errors
 #' set.seed(123)
 #' n <- 50
-#' p <- 2
 #' x <- seq(-5, 5, length.out = n)
 #' X <- cbind(1, x, x^2)
 #' theta_true <- c(-6, -3, 0.25)
-#' e_sd <- 0.2
+#' Y <- X %*% theta_true + rnorm(n, sd = 0.2)
 #'
-#' # Generate response
-#' epsilon <- rnorm(n, mean = 0, sd = e_sd)
-#' Y <- X %*% theta_true + epsilon
+#' fit <- compute_bscb_ind_jeffreys(
+#'   X          = X,
+#'   Y          = Y,
+#'   alpha      = 0.05,
+#'   a          = -5,
+#'   b          =  5,
+#'   L          = 1000,
+#'   theta_true = theta_true,
+#'   verbose    = FALSE
+#' )
 #'
-#' # Compute BSCB-C with default settings
-#' fit <- compute_bscb_conjugate(X=X,  Y=Y, alpha = 0.05, a = -5, b = 5, L = 50000,
-#'                               AR_setting = 0, # 0: iid error; 1: autoregressive error
-#'                               rho = NULL,
-#'                               hyperparameter = "empirical",
-#'                               optimize_type = "P",
-#'                               theta_true = theta_true,
-#'                               verbose = FALSE)
+#' # Critical constant
+#' fit$lambda
 #'
-#'
-#' # View results
-#' print(fit$lambda)           # Critical value
-#' print(fit$mu_star)          # Posterior mean of theta
-#' print(fit$cov_theta)        # Posterior covariance matrix
-#'
-#'
-#' # Compute BPCB-I at a specific point
-#' x_new <- 0.5
-#' lower <- fit$lower_bound(x_new)
-#' upper <- fit$upper_bound(x_new)
-#' cat("At x =", x_new, ": [", lower, ",", upper, "]\n")
-#'
-#' # Vectorized computation for plotting
-#' x_seq <- seq(-5, 5, length.out = 1000)
+#' # Evaluate the band over a grid
+#' x_seq     <- seq(-5, 5, length.out = 200)
 #' lower_vec <- fit$lower_bound(x_seq)
 #' upper_vec <- fit$upper_bound(x_seq)
-#' y_true <- cbind(1, x_seq, x_seq^2) %*% theta_true
 #'
-#' # Visualization
-#' plot(x_seq, lower_vec, type = "l", col = "red", lty = 2, lwd = 2,
-#'      ylim = range(c(lower_vec, upper_vec, Y)),
-#'      xlab = "x", ylab = "y",
-#'      main = "95% Bayesian Simultaneous Credible Band (Conjugate Prior)")
-#' lines(x_seq, upper_vec, col = "red", lty = 2, lwd = 2)
-#' lines(x_seq, y_true, col = "blue", lwd = 2)
-#' points(x, Y, pch = 16, col = "gray")
-#' legend("topright",
-#'        legend = c("True curve", "Data", "95% BSCB-C"),
-#'        col = c("blue", "gray", "red"),
-#'        lty = c(1, NA, 2),
-#'        pch = c(NA, 16, NA),
-#'        lwd = 2)
-
-
-
-compute_bpcb_indJeffreys <- function(X, # X is a n\times (p+1) matrix
+#' \donttest{
+#' # Full example with recommended L
+#' fit_full <- compute_bscb_ind_jeffreys(
+#'   X = X, Y = Y, alpha = 0.05, a = -5, b = 5,
+#'   L = 50000, theta_true = theta_true
+#' )
+#' }
+compute_bscb_ind_jeffreys <- function(X, # X is a n\times (p+1) matrix
                                    Y, # Y is a n dimensional vector
                                    alpha = 0.05,
                                    a = NULL,
@@ -97,6 +93,7 @@ compute_bpcb_indJeffreys <- function(X, # X is a n\times (p+1) matrix
                                    theta_true = NULL,
                                    verbose = TRUE
 ){
+
   optimize_type <- match.arg(optimize_type)
   # ============ Input validation ============
   if (!is.matrix(X)) X <- as.matrix(X)
@@ -132,12 +129,12 @@ compute_bpcb_indJeffreys <- function(X, # X is a n\times (p+1) matrix
   V_inv <- solve(V)
 
   # ============ Compute posterior parameters ============
-  ng <- compute_NG_param(X = X, Y = Y, V = V, hyperparameter = hyperparameter)
+  IJ_param <- compute_IJ_param(X = X, Y = Y, V = V)
 
-  mu_star   <- ng$marginal_pos_theta_mean    # marginal posterior of theta: mean
-  scale_mat <- ng$marginal_pos_theta_scale   # marginal posterior of theta: scale matrix
-  dof       <- ng$marginal_pos_theta_dof     # marginal posterior of theta: degrees of freedom
-  cov_theta <- (dof / (dof - 2)) * scale_mat  # marginal posterior of theta: covariance matrix
+  mu_star   <- IJ_param$marginal_pos_theta_mean    # marginal posterior of theta: mean
+  scale_mat <- IJ_param$marginal_pos_theta_scale   # marginal posterior of theta: scale matrix
+  dof       <- IJ_param$marginal_pos_theta_dof     # marginal posterior of theta: degrees of freedom
+  cov_theta <- (dof / (dof - 2)) * scale_mat       # marginal posterior of theta: covariance matrix
 
   # ============ Compute lambda via Monte Carlo ============
   if (verbose) message("Computing lambda via Monte Carlo sampling...")
@@ -239,7 +236,7 @@ compute_bpcb_indJeffreys <- function(X, # X is a n\times (p+1) matrix
 
       # Metadata
       call = match.call(),
-      method = "conjugate",
+      method = "independent_jeffreys",
       n = n,
       p = p,
       alpha = alpha,
@@ -252,7 +249,6 @@ compute_bpcb_indJeffreys <- function(X, # X is a n\times (p+1) matrix
       params = list(
         AR_setting = AR_setting,
         rho = rho,
-        hyperparameter = hyperparameter, # "empirical" / "unit_info" / "g_prior"
         L = L,
         optimize_type = optimize_type
       )

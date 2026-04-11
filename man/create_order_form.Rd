@@ -2,11 +2,23 @@
 % Please edit documentation in R/optimize_function.R
 \name{create_order_form}
 \alias{create_order_form}
-\title{Create polynomial basis function}
+\title{Create a polynomial basis vector function}
 \usage{
 create_order_form(p)
 }
-\description{
-Create polynomial basis function
+\arguments{
+\item{p}{Non-negative integer. Polynomial degree.}
 }
-\keyword{internal}
+\value{
+A function \code{f(x)} that returns \eqn{(1, x, \ldots, x^p)}
+as a numeric vector (for scalar \code{x}) or matrix (for vector \code{x}).
+}
+\description{
+Returns a function that maps a scalar \eqn{x} to the polynomial basis
+vector \eqn{(1, x, x^2, \ldots, x^p)}.
+}
+\examples{
+f <- create_order_form(p = 2)
+f(3)   # returns c(1, 3, 9)
+f(c(1, 2, 3))  # returns a matrix
+}

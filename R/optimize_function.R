@@ -2,9 +2,26 @@
 ####################################.     Functions   ####################################
 ##########################################################################################
 
-#' Create polynomial basis function
-#' @keywords internal
+# =============================================================================
+# Optimization and helper functions for BSCB/BPCB computation
+# =============================================================================
+
+#' Create a polynomial basis vector function
+#'
+#' Returns a function that maps a scalar \eqn{x} to the polynomial basis
+#' vector \eqn{(1, x, x^2, \ldots, x^p)}.
+#'
+#' @param p Non-negative integer. Polynomial degree.
+#'
+#' @return A function \code{f(x)} that returns \eqn{(1, x, \ldots, x^p)}
+#'   as a numeric vector (for scalar \code{x}) or matrix (for vector \code{x}).
+#'
 #' @export
+#'
+#' @examples
+#' f <- create_order_form(p = 2)
+#' f(3)   # returns c(1, 3, 9)
+#' f(c(1, 2, 3))  # returns a matrix
 create_order_form <- function(p) {
   if (!is.numeric(p) || p < 0 || p != floor(p)) {
     stop("p must be a non-negative integer")
@@ -35,7 +52,6 @@ create_order_form <- function(p) {
       }
     }
   } else {
-    # 通用版本
     powers <- 0:p
     function(x) {
       result <- outer(x, powers, `^`)
@@ -45,10 +61,19 @@ create_order_form <- function(p) {
   }
 }
 
+# -----------------------------------------------------------------------------
+# T(x) statistic functions
+# These functions compute the standardised test statistic T(x) used in the
+# critical constant estimation and coverage evaluation.
+# -----------------------------------------------------------------------------
 
-#########################################################
-#########.             Optimization           ###########
-#########################################################
+#' T(x) for computing lambda (PSCP): uses posterior draw theta_hat
+#' @param x Numeric. Evaluation point.
+#' @param theta_hat Numeric vector. Posterior draw of theta.
+#' @param mu_star Numeric vector. Posterior mean of theta.
+#' @param cov_theta Numeric matrix. Posterior covariance of theta.
+#' @return Numeric scalar. Value of T(x).
+#' @export
 
 fn_Bayes_PCP <- function(x, theta_hat, mu_star, cov_theta) {
   x_i <- order_form(x)
@@ -58,6 +83,10 @@ fn_Bayes_PCP <- function(x, theta_hat, mu_star, cov_theta) {
   return(lambda)
 }
 
+#' Negative T(x) for minimisation-based optimisers (e.g. DEoptim)
+#' @inheritParams fn_Bayes_PCP
+#' @return Numeric scalar. Negative value of T(x).
+#' @export
 fn_neg_Bayes_PCP <- function(x, theta_hat, mu_star, cov_theta) {
   x_i <- order_form(x)
   numerator <- abs((x_i)%*%t(theta_hat-t(mu_star)))
@@ -66,6 +95,13 @@ fn_neg_Bayes_PCP <- function(x, theta_hat, mu_star, cov_theta) {
   return(lambda)
 }
 
+#' T(x) for computing ESCR: uses true parameter theta_true
+#' @param x Numeric. Evaluation point.
+#' @param theta_true Numeric vector. True regression coefficients.
+#' @param mu_star Numeric vector. Posterior mean of theta.
+#' @param cov_theta Numeric matrix. Posterior covariance of theta.
+#' @return Numeric scalar. Value of T(x).
+#' @export
 fn_Bayes_ECR <- function(x, theta_true, mu_star, cov_theta) {
   x_i <- order_form(x)
   numerator <- abs((x_i)%*%t(theta_true-t(mu_star)))
@@ -75,6 +111,14 @@ fn_Bayes_ECR <- function(x, theta_true, mu_star, cov_theta) {
 }
 
 
+#' T(x) to compute ESCR for frequentist methods
+#' @param x Numeric. Evaluation point.
+#' @param theta_true Numeric vector. True regression coefficients.
+#' @param lm_theta_hat Numeric vector. OLS estimate of theta.
+#' @param S Numeric. Residual standard error.
+#' @param inv Numeric matrix. Inverse of \eqn{X^T X}.
+#' @return Numeric scalar. Value of T(x).
+#' @export
 fn_Freq_ECR <- function(x, theta_true, lm_theta_hat, S, inv) {
   x_i <- order_form(x)
   numerator <- abs((x_i) %*% t(theta_true - t(lm_theta_hat)))
@@ -84,35 +128,54 @@ fn_Freq_ECR <- function(x, theta_true, lm_theta_hat, S, inv) {
 }
 
 #### find the global maximum of T(x) form function
+# -----------------------------------------------------------------------------
+# Global maximum finders
+# Two methods:
+#   find_global_maximum     : grid search + local optimisation (fallback)
+#   find_global_maximum_h_all: analytic polyroot method (recommended, Liu's method)
+# -----------------------------------------------------------------------------
+
+#' Find the global maximum of T(x) via grid search and local optimisation
+#'
+#' Fallback method using a coarse grid search combined with \code{uniroot}
+#' and \code{optimize}. For most cases, \code{find_global_maximum_h_all}
+#' (Liu's analytic method) is preferred.
+#'
+#' @param fn Function. The objective function T(x) to maximise.
+#' @param a Numeric. Left endpoint of the search interval.
+#' @param b Numeric. Right endpoint of the search interval.
+#' @param order_form Function. Polynomial basis function from
+#'   \code{create_order_form}.
+#' @param theta Numeric vector. Posterior draw of theta.
+#' @param mu_star Numeric vector. Posterior mean of theta.
+#' @param cov_mat Numeric matrix. Covariance matrix.
+#' @param tol Numeric. Numerical tolerance. Default \code{1e-6}.
+#' @param n_grid Integer. Number of grid points. Default \code{100}.
+#' @return A list with components \code{maximum}, \code{x_max}, and
+#'   \code{all_candidates}.
+#' @export
 find_global_maximum <- function(fn, a, b, order_form, theta, mu_star, cov_mat,
                                 tol = 1e-6, n_grid = 100) {
 
-  # 定义分子函数（不取绝对值）
   numerator_fn <- function(x) {
     x_i <- order_form(x)
     as.numeric((x_i) %*% t(theta - t(mu_star)))
   }
 
-  # 定义分母函数
   denominator_fn <- function(x) {
     x_i <- order_form(x)
     as.numeric(sqrt(x_i %*% cov_mat %*% t(t(x_i))))
   }
 
-  # 存储候选点
   candidate_x <- c()
   candidate_values <- c()
 
-  # (1) 两个端点
   candidate_x <- c(candidate_x, a, b)
   candidate_values <- c(candidate_values, fn(a), fn(b))
 
-  # (2) 寻找分子为零的点（尖点）
-  # 使用网格搜索 + uniroot
   grid <- seq(a, b, length.out = n_grid)
   num_values <- sapply(grid, numerator_fn)
 
-  # 检测符号变化
   sign_changes <- which(diff(sign(num_values)) != 0)
 
   for (idx in sign_changes) {
@@ -125,24 +188,18 @@ find_global_maximum <- function(fn, a, b, order_form, theta, mu_star, cov_mat,
     }, error = function(e) {})
   }
 
-  # (3) 寻找导数为零的点
-  # 使用数值导数
   fn_deriv <- function(x, h = 1e-6) {
     (fn(x + h) - fn(x - h)) / (2 * h)
   }
 
-  # 在每个子区间寻找导数为零的点
-  # 排除已找到的尖点附近
   search_intervals <- list()
 
-  # 将[a,b]分割，避开尖点
   zero_points <- candidate_x[candidate_x > a & candidate_x < b]
   zero_points <- sort(zero_points)
 
   if (length(zero_points) == 0) {
     search_intervals <- list(c(a, b))
   } else {
-    # 创建搜索区间，避开尖点附近
     all_points <- c(a, zero_points, b)
     for (i in 1:(length(all_points) - 1)) {
       left <- all_points[i] + tol
@@ -153,13 +210,10 @@ find_global_maximum <- function(fn, a, b, order_form, theta, mu_star, cov_mat,
     }
   }
 
-  # 在每个区间寻找导数为零的点
   for (interval in search_intervals) {
     tryCatch({
-      # 使用 optimize 寻找极值点
       result <- optimize(fn, interval = interval, maximum = TRUE)
 
-      # 验证是否为极值点（导数接近零）
       if (abs(fn_deriv(result$maximum)) < 0.01) {
         candidate_x <- c(candidate_x, result$maximum)
         candidate_values <- c(candidate_values, result$objective)
@@ -167,7 +221,6 @@ find_global_maximum <- function(fn, a, b, order_form, theta, mu_star, cov_mat,
     }, error = function(e) {})
   }
 
-  # 去重（保留数值上接近的点中函数值最大的）
   if (length(candidate_x) > 1) {
     unique_indices <- c()
     for (i in 1:length(candidate_x)) {
@@ -179,7 +232,6 @@ find_global_maximum <- function(fn, a, b, order_form, theta, mu_star, cov_mat,
     candidate_values <- candidate_values[unique_indices]
   }
 
-  # 返回最大值
   max_idx <- which.max(candidate_values)
 
   return(list(
@@ -190,9 +242,21 @@ find_global_maximum <- function(fn, a, b, order_form, theta, mu_star, cov_mat,
 }
 
 
+# -----------------------------------------------------------------------------
+# Band evaluation functions
+# f_L_SCB / f_U_SCB: vertical distance from true curve to band boundary.
+# Positive value means the true curve is inside the band at that x.
+# L_SCB / U_SCB: raw lower and upper band values (used in coverage integration).
+# -----------------------------------------------------------------------------
 
-
-
+#' Vertical distance from true curve to lower band boundary
+#' @param x Numeric. Evaluation point.
+#' @param cov_theta Numeric matrix. Posterior covariance of theta.
+#' @param mu_star Numeric vector. Posterior mean of theta.
+#' @param lambda_best_optim Numeric. Critical constant lambda.
+#' @param theta_true Numeric vector. True regression coefficients.
+#' @return Numeric. Positive if true curve is above lower bound.
+#' @export
 f_L_SCB <- function(x, cov_theta, mu_star, lambda_best_optim, theta_true){
   x_i <- order_form(x)
   denominator <- sqrt(x_i%*%cov_theta%*%t(t(x_i)))
@@ -203,6 +267,10 @@ f_L_SCB <- function(x, cov_theta, mu_star, lambda_best_optim, theta_true){
   return(y_l)
 }
 
+#' Vertical distance from true curve to upper band boundary
+#' @inheritParams f_L_SCB
+#' @return Numeric. Positive if true curve is below upper bound.
+#' @export
 f_U_SCB <- function(x, cov_theta, mu_star, lambda_best_optim, theta_true){
   x_i <- order_form(x)
   denominator <- sqrt(x_i%*%cov_theta%*%t(t(x_i)))
@@ -213,42 +281,14 @@ f_U_SCB <- function(x, cov_theta, mu_star, lambda_best_optim, theta_true){
   return(y_u)
 }
 
-#########################################################
-###  Huber regression with 5-fold cross-validation  #####
-#########################################################
-cv_huber <- function(x_scale, Y, k_vals, folds = 5) {
-  cv_folds <- caret::createFolds(Y, k = folds, list = TRUE, returnTrain = FALSE) # Create CV folds
-  errors <- matrix(NA, nrow = length(k_vals), ncol = folds) # Store results
 
-  for (ii in seq_along(k_vals)) {  # Loop over k values
-    k_val <- k_vals[ii]
-
-    for (jj in seq_along(cv_folds)) { # Loop over folds
-      test_idx <- cv_folds[[jj]]
-      train_idx <- setdiff(seq_along(Y), test_idx)
-
-      X_train <- x_scale[train_idx, , drop = FALSE]  # Split data
-      y_train <- Y[train_idx]
-      X_test <- x_scale[test_idx, , drop = FALSE]
-      y_test <- Y[test_idx]
-
-      huber_fit <- MASS::rlm(y_train ~ ., data = as.data.frame(cbind(y_train, X_train)), psi = MASS::psi.huber, k = k_val) # Fit Huber regression
-
-      y_pred <- predict(huber_fit, newdata = as.data.frame(cbind(rep(1, n=nrow(X_test)),X_test))) # Predict on test data
-      errors[ii, jj] <- mean((y_pred - y_test)^2) # Compute mean squared error
-    }
-  }
-  avg_errors <- rowMeans(errors, na.rm = TRUE) # Compute average CV error for each k
-  best_k <- k_vals[which.min(avg_errors)] # Get optimal k
-
-  return(list(best_k = best_k, errors = avg_errors))
-}
-
-
-
-#########################################################
-############   Posterior coverage probability  ##########
-#########################################################
+#' Evaluate lower band at x
+#' @param x Numeric. Evaluation point.
+#' @param cov_theta Numeric matrix. Posterior covariance of theta.
+#' @param mu_star Numeric vector. Posterior mean of theta.
+#' @param lambda_best_optim Numeric. Critical constant lambda.
+#' @return Numeric. Lower band value at x.
+#' @export
 L_SCB <- function(x, cov_theta, mu_star, lambda_best_optim){
   x_i <- order_form(x)
   denominator <- sqrt(x_i%*%cov_theta%*%t(t(x_i)))
@@ -256,6 +296,10 @@ L_SCB <- function(x, cov_theta, mu_star, lambda_best_optim){
   return(lower_bound)
 }
 
+#' Evaluate upper band at x
+#' @inheritParams L_SCB
+#' @return Numeric. Upper band value at x.
+#' @export
 U_SCB <- function(x, cov_theta, mu_star, lambda_best_optim){
   x_i <- order_form(x)
   denominator <- sqrt(x_i%*%cov_theta%*%t(t(x_i)))
@@ -263,58 +307,29 @@ U_SCB <- function(x, cov_theta, mu_star, lambda_best_optim){
   return(upper_bound)
 }
 
-# Function to compute probability at a given x
-prob_x_SCB <- function(x, mu_star, cov_theta, dof) {
-  x_vec <- order_form(x)
-  mu_Y <- sum(x_vec * mu_star)
-  sigma_Y <- sqrt(sum(x_vec * (cov_theta %*% x_vec)))
-  p <- pt((U_SCB(x) - mu_Y) / sigma_Y, df = dof) - pt((L_SCB(x) - mu_Y) / sigma_Y, df = dof)
-  return(p)
-}
-
-# Normal density function restricted to [a,b]
-truncated_normal_density <- function(x, a, b) {
-  denom <- pnorm(b) - pnorm(a)  # Normalization constant
-  return(dnorm(x) / denom)
-}
-
-# PDF of N(0, 1)
-normal_density <- function(x) {
-  return(dnorm(x, mean = 0, sd = 1))
-}
-
-uniform_density <- function(x, a, b){
-  return(dunif(x, min = a, max= b))
-}
-# Integral function
-integrand_SCB <- function(x) {
-  if(x_setting == "1"){
-    s <- prob_x_SCB(x)*uniform_density(x)
-  }else if(x_setting == "2"){
-    s <- prob_x_SCB(x)*truncated_normal_density(x)
-  }
-  return(s)
-}
-
-#######    HMC.      #######
-# Function to compute probability at a given x for HMC
-prob_x_SCB_HMC <- function(x) {
-
-  p <- ecdf_XTtheta(U_SCB(x)) - ecdf_XTtheta(L_SCB(x))
-  return(p)
-}
-# Integral function for HMC
-integrand_SCB_HMC <- function(x) {
-  if(x_setting == "1"){
-    s <- prob_x_SCB_HMC(x)*uniform_density(x)
-    #s <- prob_x_SCB_HMC(x)
-  }else if(x_setting == "2"){
-    s <- prob_x_SCB_HMC(x)*truncated_normal_density(x)
-  }
-  return(s)
-}
 
 
+
+
+# -----------------------------------------------------------------------------
+# Analytic sup T(x) via polyroot (Liu's method, recommended)
+# -----------------------------------------------------------------------------
+
+#' Find the global maximum of T(x) analytically via polyroot (Liu's method)
+#'
+#' Computes \eqn{\sup_{x \in [a,b]} T(x)} by finding the stationary points of
+#' \eqn{h(x) = T(x)^2 = N(x)/D(x)} via \code{polyroot}, where \eqn{N(x)} and
+#' \eqn{D(x)} are polynomials. This is the recommended method.
+#'
+#' @param a Numeric. Left endpoint of the search interval.
+#' @param b Numeric. Right endpoint of the search interval.
+#' @param d Numeric vector of length \eqn{p+1}. Direction vector
+#'   (\eqn{\theta - \mu^*}).
+#' @param cov_mat Numeric matrix of dimension \eqn{(p+1) \times (p+1)}.
+#'   Covariance matrix.
+#' @return A list with components \code{maximum}, \code{x_max}, and
+#'   \code{all_candidates}.
+#' @export
 find_global_maximum_h_all <- function(a, b, d, cov_mat) {
 
   # d is a (p+1) vector
@@ -385,15 +400,31 @@ find_global_maximum_h_all <- function(a, b, d, cov_mat) {
   ))
 }
 
-# To compute the critical constant for BSCB and BPCB; To compute PSCP for BSCB and BPCB
+
+#' To compute the critical constant for BSCB and BPCB; To compute PSCP for BSCB and BPCB
+#' @param a Numeric. Left endpoint.
+#' @param b Numeric. Right endpoint.
+#' @param theta_hat Numeric vector. Posterior draw of theta.
+#' @param mu_star Numeric vector. Posterior mean of theta.
+#' @param cov_mat Numeric matrix. Covariance matrix.
+#' @return List with \code{maximum} and \code{x_max}.
+#' @export
 sup_T_Bayes_PSCP <- function(a, b, theta_hat, mu_star, cov_mat) {
   d <- theta_hat - as.numeric(mu_star)
   find_global_maximum_h_all(a, b, d = d, cov_mat = cov_mat)
 }
 
-## To compute ESCR for BSCB and BPCB
-# for BSCB, cov_mat <- cov_theta
-# for BPCB, cov_mat <- scale_mat
+#' To compute ESCR for BSCB and BPCB
+#' For BSCB use \code{cov_mat = cov_theta};
+#' for BPCB use \code{cov_mat = scale_mat}.
+#'
+#' @param a Numeric. Left endpoint.
+#' @param b Numeric. Right endpoint.
+#' @param theta_true Numeric vector. True regression coefficients.
+#' @param mu_star Numeric vector. Posterior mean of theta.
+#' @param cov_mat Numeric matrix. Covariance matrix.
+#' @return List with \code{maximum} and \code{x_max}.
+#' @export
 sup_T_Bayes_ESCR <- function(a, b, theta_true, mu_star, cov_mat) {
   d <- theta_true - as.numeric(mu_star)
   find_global_maximum_h_all(a, b, d = d, cov_mat = cov_mat)
@@ -401,13 +432,27 @@ sup_T_Bayes_ESCR <- function(a, b, theta_true, mu_star, cov_mat) {
 
 
 
-## To compute the critical constant for simFSCB
+#' To compute the critical constant for simFSCB
+#' @param a Numeric. Left endpoint.
+#' @param b Numeric. Right endpoint.
+#' @param W_sample Numeric vector. Simulated draw.
+#' @param cov_mat Numeric matrix. Inverse of \eqn{X^T X}.
+#' @return List with \code{maximum} and \code{x_max}.
+#' @export
 sup_T_simFSCB <- function(a, b, W_sample, cov_mat) { # cov_mat <- XtX_inv
   d <- as.numeric(W_sample)
   find_global_maximum_h_all(a, b, d = d, cov_mat = cov_mat)
 }
 
-## To compute the ESCR for FSCB and FPCB
+#' To compute the ESCR for FSCB and FPCB
+#' @param a Numeric. Left endpoint.
+#' @param b Numeric. Right endpoint.
+#' @param theta_true Numeric vector. True regression coefficients.
+#' @param lm_theta_hat Numeric vector. OLS estimate of theta.
+#' @param cov_mat Numeric matrix. Scaled covariance matrix
+#'   (\eqn{S^2 \times (X^T X)^{-1}}).
+#' @return List with \code{maximum} and \code{x_max}.
+#' @export
 sup_T_Freq_ESCR <- function(a, b, theta_true, lm_theta_hat, cov_mat){ # cov_mat <- (as.numeric(S^2) * inv
   d <- theta_true - as.numeric(lm_theta_hat)
   find_global_maximum_h_all(a, b, d = d, cov_mat = cov_mat)
