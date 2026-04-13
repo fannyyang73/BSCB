@@ -74,7 +74,7 @@ fit_j <- compute_bscb_ind_jeffreys(
   L     = 500000
 )
 
-# --- BPCB-_iJ: Bayesian pointwise credible bands under the Independent Jeffreys prior ---
+# --- BPCB-_I-J: Bayesian pointwise credible bands under the Independent Jeffreys prior ---
 fit_p <- compute_bpcb_ind_jeffreys(
   X     = X,
   Y     = Y,
@@ -101,17 +101,23 @@ legend("topright",
        col    = c("blue", "gray", "red"),
        lty    = c(1, NA, 2),
        pch    = c(NA, 16, NA))
+       
+# Evaluate coverage
+coverage_ESCR(fit_c, optimize_type = "P", verbose = TRUE)
+coverage_PSCP(fit_c, draw_num = 10000, optimize_type = "P", verbose = TRUE)
 ```
 
 ## Main Functions
 
-| Function                      | Description                                       |
-|-------------------------------|---------------------------------------------------|
-| `compute_bscb_conjugate()`    | BSCB under Normal-Gamma conjugate prior           |
-| `compute_bscb_ind_jeffreys()` | BSCB under independent Jeffreys prior             |
-| `compute_bpcb_ind_jeffreys()` | BPCB under independent Jeffreys prior             |
-| `compute_NG_param()`          | Compute Normal-Gamma posterior parameters         |
-| `compute_IJ_param()`          | Compute independent Jeffreys posterior parameters |
+| Function                      | Description                                             |
+|-------------------------------|---------------------------------------------------------|
+| `compute_bscb_conjugate()`    | BSCB under Normal-Gamma conjugate prior                 |
+| `compute_bscb_ind_jeffreys()` | BSCB under independent Jeffreys prior                   |
+| `compute_bpcb_ind_jeffreys()` | BPCB under independent Jeffreys prior                   |
+| `coverage_ESCR()`             | Empirical simultaneous coverage rate indicator (0 or 1) |
+| `coverage_PSCP()`             | Posterior simultaneous coverage probability estimate    |
+| `compute_NG_param()`          | Compute Normal-Gamma posterior parameters               |
+| `compute_IJ_param()`          | Compute independent Jeffreys posterior parameters       |
 
 ## Key Arguments
 
@@ -121,3 +127,4 @@ legend("topright",
 | `optimize_type`  | Method for computing                  | `"P"` (polyroot, recommended), `"G"` (global), `"D"` (DEoptim) |
 | `AR_setting`     | Error structure                       | `0` = i.i.d., `1` = AR(1)                                      |
 | `L`              | Monte Carlo draws for                 | default `500000`                                               |
+| `draw_num`       | Monte Carlo draws for PSCP estimation | default `10000`                                                |

@@ -110,6 +110,21 @@ fn_Bayes_ECR <- function(x, theta_true, mu_star, cov_theta) {
   return(lambda)
 }
 
+#' T(x) for computing ESCR for DEoptim: uses true parameter theta_true
+#' @param x Numeric. Evaluation point.
+#' @param theta_true Numeric vector. True regression coefficients.
+#' @param mu_star Numeric vector. Posterior mean of theta.
+#' @param cov_theta Numeric matrix. Posterior covariance of theta.
+#' @return Numeric scalar. Value of T(x).
+#' @export
+fn_neg_Bayes_ECR <- function(x, theta_true, mu_star, cov_theta) {
+  x_i <- order_form(x)
+  numerator <- abs((x_i)%*%t(theta_true-t(mu_star)))
+  denominator <- sqrt(x_i%*%cov_theta%*%t(t(x_i)))
+  lambda <- numerator%*%solve(denominator)*(-1)
+  return(lambda)
+}
+
 
 #' T(x) to compute ESCR for frequentist methods
 #' @param x Numeric. Evaluation point.
