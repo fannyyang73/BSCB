@@ -25,7 +25,7 @@ approaches based on different prior specifications:
 <!-- and requires Stan via `cmdstanr`. -->
 
 A full demo is available
-[here](https://github.com/fannyyang73/BSCB/tree/main/demo/BSCB_demo.Rmd).
+[here](https://github.com/fannyyang73/BSCB/tree/main/demo).
 
 ## Installation
 
@@ -60,6 +60,7 @@ fit_c <- compute_bscb_conjugate(
   a              = -5,
   b              =  5,
   L              = 500000,
+  theta_true     = theta_true,
   hyperparameter = "g_prior",   # "empirical", "unit_info", or "g_prior"
   optimize_type  = "P"          # "P" = polyroot (recommended)
 )
@@ -71,7 +72,8 @@ fit_j <- compute_bscb_ind_jeffreys(
   alpha = 0.05,
   a     = -5,
   b     =  5,
-  L     = 500000
+  L     = 500000,
+  theta_true     = theta_true
 )
 
 # --- BPCB-_I-J: Bayesian pointwise credible bands under the Independent Jeffreys prior ---
@@ -80,7 +82,8 @@ fit_p <- compute_bpcb_ind_jeffreys(
   Y     = Y,
   alpha = 0.05,
   a     = -5,
-  b     =  5
+  b     =  5,
+  theta_true     = theta_true
 )
 
 # Evaluate bands over a grid and plot
