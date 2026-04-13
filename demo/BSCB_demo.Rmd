@@ -8,22 +8,231 @@ date: "2026-04-08"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# Bayesian simultaneous credible bands for the polynomial model
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## Overview
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+This demo illustrates how to use the **BSCB** package to construct and
+evaluate Bayesian simultaneous credible bands (BSCB) and Bayesian pointwise
+credible bands (BPCB) for polynomial regression. Three methods are demonstrated:
 
-```{r cars}
-summary(cars)
+- **BSCB-C**: BSCB under the Normal-Gamma conjugate prior
+- **BSCB-J**: BSCB under the independent Jeffreys prior
+- **BPCB-J**: BPCB under the independent Jeffreys prior
+
+
+```{r}
+library(BSCB)
 ```
 
-## Including Plots
+## 1. Simulate Data
 
-You can also embed plots, for example:
+We simulate data from a quadratic regression model
+$Y_i = \theta_0 + \theta_1 x_i + \theta_2 x_i^2 + \varepsilon_i$,
+where $\varepsilon_i \sim N(0, \sigma^2)$.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+# Simulate data from a quadratic model
+set.seed(123)
+n <- 50
+x <- seq(-0.5, 0.5, length.out = n)
+X <- cbind(1, x, x^2)
+theta_true <- c(-6, -3, 0.25)
+Y <- X %*% theta_true + rnorm(n, sd = 0.2)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## 2. Construct the Bands
+
+### BSCB-C: BSCB under the Normal-Gamma conjugate prior
+
+The Normal-Gamma conjugate prior supports three hyperparameter specifications:
+`"empirical"` (empirical Bayes), `"unit_info"` (unit-information prior), and
+`"g_prior"` (Zellner's g-prior). The critical constant $\lambda$ is estimated
+via $L = 500{,}000$ Monte Carlo draws.
+
+```{r}
+# --- BSCB-C: Bayesian simultaneous credible bands under the Normal-Gamma conjugate prior ---
+fit_c <- compute_bscb_conjugate(
+  X              = X,
+  Y              = Y,
+  alpha          = 0.05,
+  a              = -0.5,
+  b              =  0.5,
+  L              = 500000,
+  theta_true     = theta_true,
+  hyperparameter = "g_prior",   # "empirical", "unit_info", or "g_prior"
+  optimize_type  = "P"          # "P" = polyroot (recommended)
+)
+
+cat("Critical constant (BSCB-C):", fit_c$lambda, "\n")
+cat("Posterior mean of theta:\n")
+print(round(fit_c$mu_star, 4))
+```
+
+### BSCB-I-J: BSCB under the independent Jeffreys prior
+
+BSCB-I-J is equivalent to the FSCB in Liu et al.(2008) for finite sample sizes.
+```{r}
+# --- BSCB-I-J: Bayesian simultaneous credible bands under the Independent Jeffreys prior ---
+fit_j <- compute_bscb_ind_jeffreys(
+  X     = X,
+  Y     = Y,
+  alpha = 0.05,
+  a     = -0.5,
+  b     =  0.5,
+  theta_true     = theta_true,
+  L     = 500000
+)
+cat("Critical constant (BSCB-J):", fit_j$lambda, "\n")
+```
+
+### BPCB-I-J: BPCB under the independent Jeffreys prior
+
+BPCB-I-J is constructed by connecting confidence intervals at each individual points in the covariate domain. It's also equivalent to the FPCB.
+```{r}
+# --- BPCB-I-J: Bayesian pointwise credible bands under the Independent Jeffreys prior ---
+fit_p <- compute_bpcb_ind_jeffreys(
+  X     = X,
+  Y     = Y,
+  alpha = 0.05,
+  a     = -0.5,
+  b     =  0.5,
+  theta_true     = theta_true
+)
+
+```
+
+## 3. Evaluate Bands over a Grid and Plot
+
+```{r}
+library(ggplot2)
+x_seq  <- seq(-0.5, 0.5, length.out = 500)
+y_true <- as.numeric(cbind(1, x_seq, x_seq^2) %*% theta_true)
+df_obs <- data.frame(x = x, Y = as.numeric(Y))
+
+# Collect all band boundaries into a single data frame
+df_bands <- data.frame(
+  x       = rep(x_seq, 3),
+  lower   = c(as.numeric(fit_c$lower_bound(x_seq)),
+              as.numeric(fit_j$lower_bound(x_seq)),
+              as.numeric(fit_p$lower_bound(x_seq))),
+  upper   = c(as.numeric(fit_c$upper_bound(x_seq)),
+              as.numeric(fit_j$upper_bound(x_seq)),
+              as.numeric(fit_p$upper_bound(x_seq))),
+  method  = rep(c("BSCB-C-G",
+                  "BSCB-I-J",
+                  "BPCB-I-J"),
+                each = length(x_seq))
+)
+
+df_true <- data.frame(x = x_seq, y = y_true)
+
+# Colour palette (Wong 2011, colourblind-friendly)
+band_colours <- c(
+  "BSCB-C-G"         = "#4DAF4A",
+  "BSCB-I-J" = "#E41A1C",
+  "BPCB-I-J" = "#377EB8"
+)
+
+band_linetypes <- c(
+  "BSCB-C-G"         = "dashed",
+  "BSCB-I-J" = "dashed",
+  "BPCB-I-J" = "dotted"
+)
+
+ggplot() +
+  # Shaded credible regions
+  geom_ribbon(
+    data    = df_bands,
+    mapping = aes(x = x, ymin = lower, ymax = upper,
+                  fill = method),
+    alpha   = 0.10
+  ) +
+  # Band boundaries
+  geom_line(
+    data    = df_bands,
+    mapping = aes(x = x, y = lower,
+                  colour   = method,
+                  linetype = method),
+    linewidth = 0.8
+  ) +
+  geom_line(
+    data    = df_bands,
+    mapping = aes(x = x, y = upper,
+                  colour   = method,
+                  linetype = method),
+    linewidth = 0.8
+  ) +
+  # True regression curve
+  geom_line(
+    data      = df_true,
+    mapping   = aes(x = x, y = y),
+    colour    = "navyblue",
+    linewidth = 0.7,
+    linetype  = "solid"
+  ) +
+  # Observed data
+  geom_point(
+    data    = df_obs,
+    mapping = aes(x = x, y = Y),
+    colour  = "gray50",
+    size    = 1.5
+  ) +
+  scale_colour_manual(values = band_colours, name = "Method") +
+  scale_fill_manual(values   = band_colours, name = "Method") +
+  scale_linetype_manual(values = band_linetypes, name = "Method") +
+  labs(
+    title = "95% Bayesian Credible Bands for Quadratic Regression",
+    x     = "x",
+    y     = "y"
+  ) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+## 4. Evaluate Coverage
+
+### Empirical Simultaneous Coverage Rate (ESCR)
+
+`coverage_ESCR()` returns 1 if the true regression function lies within the
+band at all points in $[a, b]$, and 0 otherwise.
+
+```{r}
+escr_c <- coverage_ESCR(fit_c, optimize_type = "P", verbose = TRUE)
+escr_j <- coverage_ESCR(fit_j, optimize_type = "P", verbose = TRUE)
+escr_p <- coverage_ESCR(fit_p, optimize_type = "P", verbose = TRUE)
+
+cat("ESCR (BSCB-C):", escr_c, "\n")
+cat("ESCR (BSCB-I-J):", escr_j, "\n")
+cat("ESCR (BPCB-I-J):", escr_p, "\n")
+```
+
+### Posterior Simultaneous Coverage Probability (PSCP)
+
+`coverage_PSCP()` estimates the proportion of posterior draws for which
+$\sup_{x \in [a,b]} T(x) \leq \lambda$.
+
+```{r}
+pscp_c <- coverage_PSCP(fit_c, draw_num = 10000,
+                         optimize_type = "P", verbose = TRUE)
+pscp_j <- coverage_PSCP(fit_j, draw_num = 10000,
+                         optimize_type = "P", verbose = TRUE)
+pscp_p <- coverage_PSCP(fit_p, draw_num = 10000,
+                         optimize_type = "P", verbose = TRUE)
+
+cat("PSCP (BSCB-C):", round(pscp_c, 4), "\n")
+cat("PSCP (BSCB-I-J):", round(pscp_j, 4), "\n")
+cat("PSCP (BPCB-I-J):", round(pscp_p, 4), "\n")
+```
+
+### Summary Table
+
+```{r}
+summary_tab <- data.frame(
+  Method   = c("BSCB-C-G", "BSCB-I-J"),
+  Lambda   = round(c(fit_c$lambda, fit_j$lambda), 4),
+  ESCR     = c(escr_c, escr_j),
+  PSCP     = round(c(pscp_c, pscp_j), 4)
+)
+knitr::kable(summary_tab, caption = "Coverage summary for one simulated dataset")
+```
