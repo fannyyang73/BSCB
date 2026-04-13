@@ -8,14 +8,21 @@
 
 ## Overview
 
-**BSCB** provides methods for constructing Bayesian Simultaneous
-Credible Bands (BSCB) for polynomial regression models. The package
-implements three approaches based on different prior specifications:
+**BSCB** provides methods for constructing Bayesian simultaneous
+credible bands (BSCB) and Bayesian pointwise credible bands (BPCB) for
+polynomial regression models. The package implements the following
+approaches based on different prior specifications:
 
 - **BSCB-C**: Normal-Gamma conjugate prior (empirical Bayes,
-  unit-information, or g-prior)
-- **BSCB-J**: Independent Jeffreys prior
-- **BSCB-H**: Non-conjugate prior via Hamiltonian Monte Carlo
+  unit-information, or Zellner’s g-prior)
+- **BSCB-I-J**: Independent Jeffreys prior (objective Bayesian
+  inference)
+- **BPCB-I-J**: Bayesian pointwise credible band under the independent
+  Jeffreys prior
+
+<!-- The HMC-based method (BSCB-H) is available in the -->
+<!-- [paper replication repository](https://github.com/fannyyang73/BSCB-paper) -->
+<!-- and requires Stan via `cmdstanr`. -->
 
 A full demo is available
 [here](https://github.com/fannyyang73/BSCB/tree/main/demo/BSCB_demo.Rmd).
@@ -26,6 +33,11 @@ A full demo is available
 # install.packages("devtools")
 devtools::install_github("fannyyang73/BSCB")
 ```
+
+## Requirements
+
+- R (≥ 4.0.0)
+- R packages: `mvtnorm`, `MASS`
 
 ## Quick Start
 
@@ -40,36 +52,52 @@ X <- cbind(1, x, x^2)
 theta_true <- c(-6, -3, 0.25)
 Y <- X %*% theta_true + rnorm(n, sd = 0.2)
 
-# Fit BSCB with Normal-Gamma conjugate prior
-fit <- compute_bscb_conjugate(
-  X             = X,
-  Y             = Y,
-  alpha         = 0.05,       # 1 - 0.05 = 95% credible band
-  a             = -5,         # left endpoint of covariate domain
-  b             =  5,         # right endpoint of covariate domain
-  L             = 50000,      # Monte Carlo draws
-  hyperparameter = "g_prior", # "empirical", "unit_info", or "g_prior"
-  optimize_type  = "P"        # "P" = polyroot (recommended)
+# --- BSCB-C: Bayesian simultaneous credible bands under the Normal-Gamma conjugate prior ---
+fit_c <- compute_bscb_conjugate(
+  X              = X,
+  Y              = Y,
+  alpha          = 0.05,
+  a              = -5,
+  b              =  5,
+  L              = 500000,
+  hyperparameter = "g_prior",   # "empirical", "unit_info", or "g_prior"
+  optimize_type  = "P"          # "P" = polyroot (recommended)
 )
 
-# Critical constant
-fit$lambda
+# --- BSCB-I-J: Bayesian simultaneous credible bands under the Independent Jeffreys prior ---
+fit_j <- compute_bscb_ind_jeffreys(
+  X     = X,
+  Y     = Y,
+  alpha = 0.05,
+  a     = -5,
+  b     =  5,
+  L     = 500000
+)
 
-# Evaluate the band at a grid of x values
-x_seq     <- seq(-5, 5, length.out = 500)
-lower_vec <- fit$lower_bound(x_seq)
-upper_vec <- fit$upper_bound(x_seq)
+# --- BPCB-_iJ: Bayesian pointwise credible bands under the Independent Jeffreys prior ---
+fit_p <- compute_bpcb_ind_jeffreys(
+  X     = X,
+  Y     = Y,
+  alpha = 0.05,
+  a     = -5,
+  b     =  5
+)
 
-# Plot
-plot(x_seq, lower_vec, type = "l", col = "red", lty = 2, lwd = 2,
-     ylim = range(c(lower_vec, upper_vec, Y)),
+# Evaluate bands over a grid and plot
+x_seq <- seq(-5, 5, length.out = 500)
+
+plot(x_seq, fit_c$lower_bound(x_seq), type = "l",
+     col = "red", lty = 2, lwd = 2,
+     ylim = range(c(fit_c$lower_bound(x_seq),
+                    fit_c$upper_bound(x_seq), Y)),
      xlab = "x", ylab = "y",
      main = "95% Bayesian Simultaneous Credible Band")
-lines(x_seq, upper_vec, col = "red", lty = 2, lwd = 2)
-lines(x_seq, cbind(1, x_seq, x_seq^2) %*% theta_true, col = "blue", lwd = 2)
+lines(x_seq, fit_c$upper_bound(x_seq), col = "red",  lty = 2, lwd = 2)
+lines(x_seq, cbind(1, x_seq, x_seq^2) %*% theta_true,
+      col = "blue", lwd = 2)
 points(x, Y, pch = 16, col = "gray")
 legend("topright",
-       legend = c("True curve", "Data", "95% BSCB"),
+       legend = c("True curve", "Data", "95% BSCB-C"),
        col    = c("blue", "gray", "red"),
        lty    = c(1, NA, 2),
        pch    = c(NA, 16, NA))
@@ -77,19 +105,19 @@ legend("topright",
 
 ## Main Functions
 
-| Function                     | Description                                       |
-|------------------------------|---------------------------------------------------|
-| `compute_bscb_conjugate()`   | BSCB under Normal-Gamma conjugate prior           |
-| `compute_bpcb_indJeffreys()` | BSCB under independent Jeffreys prior             |
-| `coverage_ESCR()`            | Empirical Simultaneous Coverage Rate (ESCR)       |
-| `compute_NG_param()`         | Compute Normal-Gamma posterior parameters         |
-| `compute_IJ_param()`         | Compute independent Jeffreys posterior parameters |
+| Function                      | Description                                       |
+|-------------------------------|---------------------------------------------------|
+| `compute_bscb_conjugate()`    | BSCB under Normal-Gamma conjugate prior           |
+| `compute_bscb_ind_jeffreys()` | BSCB under independent Jeffreys prior             |
+| `compute_bpcb_ind_jeffreys()` | BPCB under independent Jeffreys prior             |
+| `compute_NG_param()`          | Compute Normal-Gamma posterior parameters         |
+| `compute_IJ_param()`          | Compute independent Jeffreys posterior parameters |
 
 ## Key Arguments
 
-| Argument         | Description                   | Options                                                        |
-|------------------|-------------------------------|----------------------------------------------------------------|
-| `hyperparameter` | Hyperparameter specification  | `"empirical"`, `"unit_info"`, `"g_prior"`                      |
-| `optimize_type`  | Method for computing sup T(x) | `"P"` (polyroot, recommended), `"G"` (global), `"D"` (DEoptim) |
-| `AR_setting`     | Error structure               | `0` = i.i.d., `1` = AR(1)                                      |
-| `L`              | Monte Carlo draws for lambda  | default `50000`                                                |
+| Argument         | Description                           | Options                                                        |
+|------------------|---------------------------------------|----------------------------------------------------------------|
+| `hyperparameter` | Hyperparameter for Normal-Gamma prior | `"empirical"`, `"unit_info"`, `"g_prior"`                      |
+| `optimize_type`  | Method for computing                  | `"P"` (polyroot, recommended), `"G"` (global), `"D"` (DEoptim) |
+| `AR_setting`     | Error structure                       | `0` = i.i.d., `1` = AR(1)                                      |
+| `L`              | Monte Carlo draws for                 | default `500000`                                               |
