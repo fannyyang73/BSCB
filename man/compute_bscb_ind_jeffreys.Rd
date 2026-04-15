@@ -10,7 +10,7 @@ compute_bscb_ind_jeffreys(
   alpha = 0.05,
   a = NULL,
   b = NULL,
-  L = 50000,
+  L = 5e+05,
   AR_setting = 0,
   rho = NULL,
   optimize_type = c("P", "G", "D"),
@@ -34,7 +34,7 @@ Inferred from \code{X[, 2]} if \code{NULL}.}
 Inferred from \code{X[, 2]} if \code{NULL}.}
 
 \item{L}{Integer. Number of Monte Carlo draws for computing the critical
-constant \eqn{\lambda}. Default is \code{50000}.}
+constant \eqn{\lambda}. Default is \code{500000}.}
 
 \item{AR_setting}{Integer. Error covariance structure:
 \code{0} = i.i.d. errors (default);
@@ -60,8 +60,12 @@ An object of class \code{"bscb_fit"}, a list containing:
 \item{lower_bound}{Function: computes the lower band at a given \code{x}.}
 \item{upper_bound}{Function: computes the upper band at a given \code{x}.}
 \item{mu_star}{Posterior mean of \eqn{\theta} (GLS estimate).}
-\item{cov_theta}{Posterior covariance matrix of \eqn{\theta}.}
 \item{dof}{Degrees of freedom of the marginal posterior (\eqn{n - p - 1}).}
+\item{scale_mat}{Scale matrix \eqn{\Sigma_0} of the marginal
+multivariate-t posterior distribution of \eqn{\theta}.}
+\item{cov_theta}{Posterior covariance matrix of \eqn{\theta}. The posterior
+covariance matrix equals \eqn{\text{Cov}(\theta)=\frac{\nu}{\nu-2} \Sigma_0},
+where \eqn{\nu} is the degrees of freedom (\code{dof}).}
 \item{x_range}{Covariate domain \eqn{[a, b]}.}
 \item{lambda_samples}{Monte Carlo samples used to compute \eqn{\lambda}.}
 \item{theta_true}{True parameters (if supplied).}
@@ -76,7 +80,10 @@ posterior of \eqn{\theta} follows a multivariate-t distribution with degrees
 of freedom \eqn{n - p - 1}.
 }
 \examples{
+\donttest{
 # Quadratic model with i.i.d. errors
+# This is for a quick demonstration;
+# For actual use, please set L = 500000.
 set.seed(123)
 n <- 50
 x <- seq(-5, 5, length.out = n)
@@ -90,7 +97,7 @@ fit <- compute_bscb_ind_jeffreys(
   alpha      = 0.05,
   a          = -5,
   b          =  5,
-  L          = 1000,
+  L          = 50000,
   theta_true = theta_true,
   verbose    = FALSE
 )
@@ -102,6 +109,7 @@ fit$lambda
 x_seq     <- seq(-5, 5, length.out = 200)
 lower_vec <- fit$lower_bound(x_seq)
 upper_vec <- fit$upper_bound(x_seq)
+}
 
 \donttest{
 # Full example with recommended L

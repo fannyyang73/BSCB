@@ -1,13 +1,18 @@
 ---
-title: "BSCB_demo"
-output: html_document
-date: "2026-04-15"
+title: "BSCB-vignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{BSCB-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
 ```
-
 # Bayesian simultaneous credible bands for the polynomial model
 
 ## Overview
@@ -17,11 +22,10 @@ evaluate Bayesian simultaneous credible bands (BSCB) and Bayesian pointwise
 credible bands (BPCB) for polynomial regression. These methods are demonstrated:
 
 - **BSCB-C**: BSCB under the Normal-Gamma conjugate prior
-- **BSCB-H**: BSCB under the non-conjugate prior implemented via HMC
 - **BSCB-I-J**: BSCB under the independent Jeffreys prior
 - **BPCB-I-J**: BPCB under the independent Jeffreys prior
 
-```{r}
+```{r setup}
 library(BSCB)
 ```
 
@@ -119,32 +123,33 @@ cat("Critical constant (BSCB-J):", fit_j$lambda, "\n")
 
 ### BSCB-H-C: BSCB under the normal-half-Cauchy prior(0,2) implemented via HMC
 
-```{r}
-mod <- instantiate::stan_package_model(
-  name    = "HMC_model",
-  package = "BSCB",
-  compile = TRUE
-)
+If you would like to produce BSCB-H-C, you can use the following codes.
 
+```{r}
+# mod <- instantiate::stan_package_model(
+#   name    = "HMC_model",
+#   package = "BSCB",
+#   compile = TRUE
+# )
 ```
 
 ```{r}
 # --- BSCB-H-C: BSCB under the normal-half-Cauchy prior(0,2) implemented via HMC ---
 
-fit_h <- compute_bscb_hmc(
-  X     = X,
-  Y     = Y,
-  V     = diag(n),
-  alpha = alpha,
-  a     = a,
-  b     = b,
-  theta_true = theta_true,
-  prior_type = "normal_half_cauchy",
-  L     = L,
-  draw_num = 10000
-)
-
-cat("Critical constant (BSCB-H-C):", fit_h$lambda, "\n")
+# fit_h <- compute_bscb_hmc(
+#   X     = X,
+#   Y     = Y,
+#   V     = diag(n),
+#   alpha = alpha,
+#   a     = a,
+#   b     = b,
+#   theta_true = theta_true,
+#   prior_type = "normal_half_cauchy",
+#   L     = L,
+#   draw_num = 10000
+# )
+# 
+# cat("Critical constant (BSCB-H-C):", fit_h$lambda, "\n")
 ```
 
 ### BPCB-I-J: BPCB under the independent Jeffreys prior
@@ -173,18 +178,15 @@ df_obs <- data.frame(x = x, Y = as.numeric(Y))
 
 # Collect all band boundaries into a single data frame
 df_bands <- data.frame(
-  x       = rep(x_seq, 4),
+  x       = rep(x_seq, 3),
   lower   = c(as.numeric(fit_c$lower_bound(x_seq)),
               as.numeric(fit_j$lower_bound(x_seq)),
-              as.numeric(fit_h$lower_bound(x_seq)),
               as.numeric(fit_p$lower_bound(x_seq))),
   upper   = c(as.numeric(fit_c$upper_bound(x_seq)),
               as.numeric(fit_j$upper_bound(x_seq)),
-              as.numeric(fit_h$upper_bound(x_seq)),
               as.numeric(fit_p$upper_bound(x_seq))),
   method  = rep(c("BSCB-C-G",
                   "BSCB-I-J",
-                  "BSCB-H-C",
                   "BPCB-I-J"),
                 each = length(x_seq))
 )
@@ -194,14 +196,12 @@ df_true <- data.frame(x = x_seq, y = y_true)
 band_colours <- c(
   "BSCB-C-G" = "#4DAF4A",
   "BSCB-I-J" = "#E41A1C",
-  "BSCB-H-C" = "darkorange2",
   "BPCB-I-J" = "#377EB8"
 )
 
 band_linetypes <- c(
   "BSCB-C-G" = "F1",
   "BSCB-I-J" = "dotdash",
-  "BSCB-H-C" = "longdash",
   "BPCB-I-J" = "solid"
 )
 
@@ -246,17 +246,17 @@ ggplot() +
   scale_colour_manual(
   values = band_colours,
   name   = "Method",
-  breaks = c("BSCB-C-G", "BSCB-H-C", "BSCB-I-J", "BPCB-I-J")) +
+  breaks = c("BSCB-C-G", "BSCB-I-J", "BPCB-I-J")) +
   scale_fill_manual(
   values = band_colours,
   name   = "Method",
-  breaks = c("BSCB-C-G", "BSCB-H-C", "BSCB-I-J", "BPCB-I-J")) +
+  breaks = c("BSCB-C-G", "BSCB-I-J", "BPCB-I-J")) +
   scale_linetype_manual(
   values = band_linetypes,
   name   = "Method",
-  breaks = c("BSCB-C-G", "BSCB-H-C", "BSCB-I-J", "BPCB-I-J")) +
+  breaks = c("BSCB-C-G", "BSCB-I-J", "BPCB-I-J")) +
   labs(
-    title = "95% BSCB-C-G, BSCB-H-C, BSCB-I-J and BPCB-I-J for Quadratic Regression",
+    title = "95% BSCB-C-G, BSCB-I-J and BPCB-I-J for Quadratic Regression",
     x     = "x",
     y     = "y"
   ) +
@@ -276,12 +276,10 @@ band at all points in $[a, b]$, and 0 otherwise.
 
 escr_j <- coverage_ESCR(fit_j, optimize_type = "P", verbose = TRUE)
 escr_c <- coverage_ESCR(fit_c, optimize_type = "P", verbose = TRUE)
-escr_h <- coverage_ESCR(fit_h, optimize_type = "P", verbose = TRUE)
 escr_p <- coverage_ESCR(fit_p, optimize_type = "P", verbose = TRUE)
 
 cat("ESCR (BSCB-I-J):", escr_j, "\n")
 cat("ESCR (BSCB-C-G):", escr_c, "\n")
-cat("ESCR (BSCB-H-C):", escr_h, "\n")
 cat("ESCR (BPCB-I-J):", escr_p, "\n")
 ```
 
@@ -296,14 +294,11 @@ pscp_j <- coverage_PSCP(fit_j, draw_num = 10000,
                          optimize_type = "P", verbose = TRUE)
 pscp_c <- coverage_PSCP(fit_c, draw_num = 10000,
                          optimize_type = "P", verbose = TRUE)
-pscp_h <- coverage_PSCP(fit_h, draw_num = 10000,
-                         optimize_type = "P", verbose = TRUE)
 pscp_p <- coverage_PSCP(fit_p, draw_num = 10000,
                          optimize_type = "P", verbose = TRUE)
 
 cat("PSCP (BSCB-I-J):", round(pscp_j, 4), "\n")
 cat("PSCP (BSCB-C-G):", round(pscp_c, 4), "\n")
-cat("PSCP (BSCB-H-C):", round(pscp_h, 4), "\n")
 cat("PSCP (BPCB-I-J):", round(pscp_p, 4), "\n")
 ```
 
@@ -311,10 +306,10 @@ cat("PSCP (BPCB-I-J):", round(pscp_p, 4), "\n")
 
 ```{r}
 summary_tab <- data.frame(
-  Method   = c("BSCB-C-G","BSCB-H-C", "BSCB-I-J"),
-  Lambda   = round(c(fit_c$lambda,fit_h$lambda, fit_j$lambda), 4),
-  ESCR     = c(escr_c,escr_h, escr_j),
-  PSCP     = round(c(pscp_c,pscp_h, pscp_j), 4)
+  Method   = c("BSCB-C-G", "BSCB-I-J"),
+  Lambda   = round(c(fit_c$lambda, fit_j$lambda), 4),
+  ESCR     = c(escr_c, escr_j),
+  PSCP     = round(c(pscp_c, pscp_j), 4)
 )
 knitr::kable(summary_tab, caption = "Coverage summary for one simulated dataset")
 ```

@@ -15,7 +15,7 @@
 #' @param b Numeric. Right endpoint of the covariate domain \eqn{[a, b]}.
 #'   Inferred from \code{X[, 2]} if \code{NULL}.
 #' @param L Integer. Number of Monte Carlo draws for computing the critical
-#'   constant \eqn{\lambda}. Default is \code{50000}.
+#'   constant \eqn{\lambda}. Default is \code{500000}.
 #' @param AR_setting Integer. Error covariance structure:
 #'   \code{0} = i.i.d. errors (default);
 #'   \code{1} = AR(1) errors.
@@ -35,8 +35,12 @@
 #'   \item{lower_bound}{Function: computes the lower band at a given \code{x}.}
 #'   \item{upper_bound}{Function: computes the upper band at a given \code{x}.}
 #'   \item{mu_star}{Posterior mean of \eqn{\theta} (GLS estimate).}
-#'   \item{cov_theta}{Posterior covariance matrix of \eqn{\theta}.}
 #'   \item{dof}{Degrees of freedom of the marginal posterior (\eqn{n - p - 1}).}
+#'   \item{scale_mat}{Scale matrix \eqn{\Sigma_0} of the marginal
+#'     multivariate-t posterior distribution of \eqn{\theta}.}
+#'   \item{cov_theta}{Posterior covariance matrix of \eqn{\theta}. The posterior
+#'     covariance matrix equals \eqn{\text{Cov}(\theta)=\frac{\nu}{\nu-2} \Sigma_0},
+#'     where \eqn{\nu} is the degrees of freedom (\code{dof}).}
 #'   \item{x_range}{Covariate domain \eqn{[a, b]}.}
 #'   \item{lambda_samples}{Monte Carlo samples used to compute \eqn{\lambda}.}
 #'   \item{theta_true}{True parameters (if supplied).}
@@ -47,7 +51,10 @@
 #' @export
 #'
 #' @examples
+#' \donttest{
 #' # Quadratic model with i.i.d. errors
+#' # This is for a quick demonstration;
+#' # For actual use, please set L = 500000.
 #' set.seed(123)
 #' n <- 50
 #' x <- seq(-5, 5, length.out = n)
@@ -61,7 +68,7 @@
 #'   alpha      = 0.05,
 #'   a          = -5,
 #'   b          =  5,
-#'   L          = 1000,
+#'   L          = 50000,
 #'   theta_true = theta_true,
 #'   verbose    = FALSE
 #' )
@@ -73,6 +80,7 @@
 #' x_seq     <- seq(-5, 5, length.out = 200)
 #' lower_vec <- fit$lower_bound(x_seq)
 #' upper_vec <- fit$upper_bound(x_seq)
+#' }
 #'
 #' \donttest{
 #' # Full example with recommended L
@@ -86,7 +94,7 @@ compute_bscb_ind_jeffreys <- function(X, # X is a n\times (p+1) matrix
                                    alpha = 0.05,
                                    a = NULL,
                                    b = NULL,
-                                   L = 50000,
+                                   L = 500000,
                                    AR_setting = 0, # 0: iid error; 1: autoregressive error
                                    rho = NULL,
                                    optimize_type = c("P","G","D"), # P: Polyroot; G: Global-optimize; D: Doptimize;
@@ -228,8 +236,9 @@ compute_bscb_ind_jeffreys <- function(X, # X is a n\times (p+1) matrix
 
       # Posterior parameters
       mu_star = as.vector(mu_star),
-      cov_theta = cov_theta,
       dof = dof,
+      scale_mat = scale_mat,
+      cov_theta = cov_theta,
 
       # Data range
       x_range = c(a, b),

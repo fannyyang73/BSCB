@@ -33,7 +33,7 @@ Inferred from \code{X[, 2]} if \code{NULL}.}
 Inferred from \code{X[, 2]} if \code{NULL}.}
 
 \item{L}{Integer. Not used in this function (included for API consistency
-with other \code{compute_b*cb_*} functions). Default is \code{50000}.}
+with other \code{compute_bscb_*} functions). Default is \code{500000}.}
 
 \item{AR_setting}{Integer. Error covariance structure:
 \code{0} = i.i.d. errors (default);
@@ -50,13 +50,17 @@ critical constant lambda.}
 \value{
 An object of class \code{"bpcb_fit"}, a list containing:
 \describe{
-\item{lambda}{Critical constant \eqn{t_{1-\alpha/2,\, n-p-1}} for the
+\item{lambda}{Critical constant \eqn{t_{n-p-1}^{\alpha/2}} for the
 credible band.}
 \item{lower_bound}{Function: computes the lower band at a given \code{x}.}
 \item{upper_bound}{Function: computes the upper band at a given \code{x}.}
 \item{mu_star}{Posterior mean of \eqn{\theta} (GLS estimate).}
-\item{cov_theta}{Posterior covariance matrix of \eqn{\theta}.}
 \item{dof}{Degrees of freedom of the marginal posterior (\eqn{n - p - 1}).}
+\item{scale_mat}{Scale matrix \eqn{\Sigma_0} of the marginal
+multivariate-t posterior distribution of \eqn{\theta}.}
+\item{cov_theta}{Posterior covariance matrix of \eqn{\theta}. The posterior
+covariance matrix equals \eqn{\text{Cov}(\theta)=\frac{\nu}{\nu-2} \Sigma_0},
+where \eqn{\nu} is the degrees of freedom (\code{dof}).}
 \item{x_range}{Covariate domain \eqn{[a, b]}.}
 \item{theta_true}{True parameters (if supplied).}
 \item{method}{Character string \code{"independent_jeffreys"}.}
@@ -67,7 +71,7 @@ credible band.}
 Constructs a \eqn{(1 - \alpha)} two-sided Bayesian pointwise credible band
 (BPCB) for polynomial regression using the independent Jeffreys prior. Unlike
 the simultaneous credible band, the critical constant \eqn{\lambda} is derived
-analytically from the marginal t-distribution as \eqn{t_{1-\alpha/2, n-p-1}}.
+analytically from the marginal t-distribution as \eqn{t_{n-p-1}^{\alpha/2}}.
 }
 \examples{
 # Quadratic model with i.i.d. errors

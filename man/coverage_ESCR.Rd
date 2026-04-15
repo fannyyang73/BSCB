@@ -25,7 +25,9 @@ Integer: 1 if covered, 0 if not covered
 Compute the coverage of BSCB
 }
 \examples{
-# Setup
+\donttest{
+# This is for a quick demonstration;
+# For actual use, please set L = 500000.
 set.seed(123)
 n <- 50
 p <- 2
@@ -36,11 +38,11 @@ theta_true <- c(-6, -3, 0.25)
 # Generate data and compute BSCB
 Y <- X \%*\% theta_true + rnorm(n, 0, 0.2)
 fit <- compute_bscb_conjugate(X, Y, alpha = 0.05, a = -5, b = 5,
-                               L = 10000, theta_true = theta_true,
+                               L = 50000, theta_true = theta_true,
                                verbose = FALSE)
 
 # Check the empirical simultaneous coverage rate (ESCR)
 is_covered <- coverage_ESCR(fit,  optimize_type ="P", verbose = TRUE)
 cat("Coverage indicator:", is_covered, "\n")
-
+}
 }

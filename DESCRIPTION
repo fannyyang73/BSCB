@@ -1,21 +1,43 @@
 Package: BSCB
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Bayesian Simultaneous Credible Bands for Polynomial Regression
+Version: 1.0.0
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+    person("Fei", "Yang", email = "fei.yang@manchester.ac.uk", 
+    role = c("aut", "cre"),
+    comment = c(ORCID = "0000-0002-3253-976X"))
+Description: Provides functions to construct two-sided Bayesian simultaneous
+    credible bands (BSCBs) for the regression curve in univariate polynomial
+    regression over a finite covariate interval. Six methods are implemented,
+    including Normal-Gamma conjugate priors (with empirical Bayes,
+    unit-information, and g-prior hyperparameter specifications),
+    non-conjugate priors fitted via Hamiltonian Monte Carlo (HMC) using
+    'cmdstanr', and a non-informative independent Jeffreys prior approach.
+    Also includes functions for computing the empirical simultaneous coverage
+    rate (ESCR) and posterior simultaneous coverage probability (PSCP),
+    enabling performance comparison across methods.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Suggests: 
-    caret,
     DEoptim,
-    glmnet,
-    renv,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    cmdstanr,
+    knitr,
+    rmarkdown,
+    ggplot2
+VignetteBuilder: knitr
+Additional_repositories: https://stan-dev.r-universe.dev
 Imports: 
     mvtnorm,
     MASS,
-    OptimalDesign
+    OptimalDesign,
+    instantiate,
+    posterior
 Config/testthat/edition: 3
+Depends: 
+    R (>= 4.0)
+Date: 2026-04-15
+URL: https://github.com/fannyyang73/BSCB/
+Config/instantiate/stan-dir: src/stan
+BugReports: https://github.com/fannyyang73/BSCB/issues

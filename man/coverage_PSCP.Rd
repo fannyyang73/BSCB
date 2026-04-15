@@ -14,7 +14,8 @@ coverage_PSCP(
 \arguments{
 \item{fit}{An object of class \code{"bscb_fit"} returned by
 \code{\link{compute_bscb_conjugate}} or
-\code{\link{compute_bscb_ind_jeffreys}}. Must contain \code{lambda},
+\code{\link{compute_bscb_ind_jeffreys}}.
+Must contain \code{lambda},
 \code{mu_star}, \code{cov_theta}, \code{dof}, \code{x_range}, and
 \code{order_form}.}
 
@@ -43,6 +44,8 @@ constant \eqn{\lambda}. The PSCP is the proportion of draws for which
 \eqn{\sup T(x) \leq \lambda}.
 }
 \examples{
+# This is for a quick demonstration;
+# For actual use, please set L = 500000 and draw_num = 10000.
 set.seed(123)
 n <- 50
 x <- seq(-5, 5, length.out = n)

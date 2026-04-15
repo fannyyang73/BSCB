@@ -15,14 +15,11 @@ approaches based on different prior specifications:
 
 - **BSCB-C**: Normal-Gamma conjugate prior (empirical Bayes,
   unit-information, or Zellner’s g-prior)
+- **BSCB-H**: Non-conjugate prior implemented via HMC
 - **BSCB-I-J**: Independent Jeffreys prior (objective Bayesian
   inference)
 - **BPCB-I-J**: Bayesian pointwise credible band under the independent
   Jeffreys prior
-
-<!-- The HMC-based method (BSCB-H) is available in the -->
-<!-- [paper replication repository](https://github.com/fannyyang73/BSCB-paper) -->
-<!-- and requires Stan via `cmdstanr`. -->
 
 A full demo is available
 [here](https://github.com/fannyyang73/BSCB/tree/main/demo).
@@ -37,7 +34,8 @@ devtools::install_github("fannyyang73/BSCB")
 ## Requirements
 
 - R (≥ 4.0.0)
-- R packages: `mvtnorm`, `MASS`
+- R packages: `mvtnorm`, `MASS`, `OptimalDesign`, `instantiate`,
+  `posterior`
 
 ## Quick Start
 
@@ -65,6 +63,28 @@ fit_c <- compute_bscb_conjugate(
   optimize_type  = "P"          # "P" = polyroot (recommended)
 )
 
+# --- BSCB-H: Bayesian simultaneous credible bands under a non-conjugate prior implemented via HMC
+
+mod <- instantiate::stan_package_model(
+  name    = "HMC_model",
+  package = "BSCB",
+  compile = TRUE
+)
+
+fit_h <- compute_bscb_hmc(
+  X     = X,
+  Y     = Y,
+  V     = diag(n),
+  alpha = alpha,
+  a     = a,
+  b     = b,
+  theta_true = theta_true,
+  prior_type = "normal_half_cauchy",
+  L     = L,
+  draw_num = 10000
+)
+
+
 # --- BSCB-I-J: Bayesian simultaneous credible bands under the Independent Jeffreys prior ---
 fit_j <- compute_bscb_ind_jeffreys(
   X     = X,
@@ -76,7 +96,7 @@ fit_j <- compute_bscb_ind_jeffreys(
   theta_true     = theta_true
 )
 
-# --- BPCB-_I-J: Bayesian pointwise credible bands under the Independent Jeffreys prior ---
+# --- BPCB-I-J: Bayesian pointwise credible bands under the Independent Jeffreys prior ---
 fit_p <- compute_bpcb_ind_jeffreys(
   X     = X,
   Y     = Y,
@@ -115,6 +135,7 @@ coverage_PSCP(fit_c, draw_num = 10000, optimize_type = "P", verbose = TRUE)
 | Function                      | Description                                             |
 |-------------------------------|---------------------------------------------------------|
 | `compute_bscb_conjugate()`    | BSCB under Normal-Gamma conjugate prior                 |
+| `compute_bscb_hmc()`          | BSCB under the non-conjugate prior via HMC              |
 | `compute_bscb_ind_jeffreys()` | BSCB under independent Jeffreys prior                   |
 | `compute_bpcb_ind_jeffreys()` | BPCB under independent Jeffreys prior                   |
 | `coverage_ESCR()`             | Empirical simultaneous coverage rate indicator (0 or 1) |

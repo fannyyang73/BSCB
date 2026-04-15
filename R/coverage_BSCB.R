@@ -13,7 +13,9 @@
 #' @export
 #'
 #' @examples
-#' # Setup
+#' \donttest{
+#' # This is for a quick demonstration;
+#' # For actual use, please set L = 500000.
 #' set.seed(123)
 #' n <- 50
 #' p <- 2
@@ -24,13 +26,14 @@
 #' # Generate data and compute BSCB
 #' Y <- X %*% theta_true + rnorm(n, 0, 0.2)
 #' fit <- compute_bscb_conjugate(X, Y, alpha = 0.05, a = -5, b = 5,
-#'                                L = 10000, theta_true = theta_true,
+#'                                L = 50000, theta_true = theta_true,
 #'                                verbose = FALSE)
 #'
 #' # Check the empirical simultaneous coverage rate (ESCR)
 #' is_covered <- coverage_ESCR(fit,  optimize_type ="P", verbose = TRUE)
 #' cat("Coverage indicator:", is_covered, "\n")
-#'
+#' }
+
 coverage_ESCR <- function(fit,
                           optimize_type = c("P","G","D"), # P: Polyroot; G: Global-optimize; D: Doptimize;
                           verbose = FALSE){
@@ -104,7 +107,8 @@ coverage_ESCR <- function(fit,
 #'
 #' @param fit An object of class \code{"bscb_fit"} returned by
 #'   \code{\link{compute_bscb_conjugate}} or
-#'   \code{\link{compute_bscb_ind_jeffreys}}. Must contain \code{lambda},
+#'   \code{\link{compute_bscb_ind_jeffreys}}.
+#'   Must contain \code{lambda},
 #'   \code{mu_star}, \code{cov_theta}, \code{dof}, \code{x_range}, and
 #'   \code{order_form}.
 #' @param draw_num Integer. Number of Monte Carlo draws for estimating PSCP.
@@ -127,6 +131,8 @@ coverage_ESCR <- function(fit,
 #' @export
 #'
 #' @examples
+#' # This is for a quick demonstration;
+#' # For actual use, please set L = 500000 and draw_num = 10000.
 #' set.seed(123)
 #' n <- 50
 #' x <- seq(-5, 5, length.out = n)
@@ -162,8 +168,14 @@ coverage_PSCP <- function(fit,
   lambda_best <- fit$lambda
   mu_star <- fit$mu_star
   cov_theta <- fit$cov_theta
-  dof <- fit$dof
-  scale_mat <- ((dof-2) / dof) * cov_theta
+  is_HMC <- !is.null(fit$method) && fit$method == "HMC"
+  if (is_HMC) {
+    theta_mat <- fit$theta_mat
+    n_samples <- nrow(theta_mat)
+  } else {
+    dof       <- fit$dof
+    scale_mat <- fit$scale_mat
+  }
   theta_true <- fit$theta_true
   a <- fit$x_range[1]
   b <- fit$x_range[2]
@@ -176,7 +188,13 @@ coverage_PSCP <- function(fit,
   # fn_Bayes_PCP and fn_neg_Bayes_PCP are defined in optimize_function.R
   cover_num <- 0
   for (j in 1:draw_num){
-    theta_hat <- mvtnorm::rmvt(n = 1, delta = mu_star, sigma = scale_mat, df = dof, type = "shifted")
+    if (is_HMC){
+      theta_hat <- theta_mat[sample(n_samples, 1), ]
+    }else{
+      theta_hat <- mvtnorm::rmvt(n = 1, delta = mu_star, sigma = scale_mat, df = dof, type = "shifted")
+    }
+
+
     if(optimize_type == "D"){#fn_neg_Bayes_PCP
       result <- DEoptim::DEoptim(fn = function(x){
         x_i         <- order_form(x)

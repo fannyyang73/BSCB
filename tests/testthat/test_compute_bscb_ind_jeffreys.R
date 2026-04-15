@@ -27,7 +27,8 @@ test_that("returns a bscb_fit object with correct structure", {
   expect_s3_class(fit, "bscb_fit")
   expect_named(fit, c("lambda", "lower_bound", "upper_bound",
                       "theta_true", "order_form",
-                      "mu_star", "cov_theta", "dof",
+                      "mu_star",  "dof",
+                      "scale_mat", "cov_theta",
                       "x_range", "call", "method",
                       "n", "p", "alpha",
                       "data", "lambda_samples", "params"))
@@ -173,4 +174,14 @@ test_that("optimize_type = 'G' runs without error", {
       optimize_type = "G", verbose = FALSE
     )
   )
+})
+
+# ---------------------------------------------------------------------------
+# scale_mat
+# ---------------------------------------------------------------------------
+test_that("scale_mat has correct dimension and relates to cov_theta", {
+  expect_equal(dim(fit$scale_mat), c(ncol(X), ncol(X)))
+  expect_equal(fit$cov_theta,
+               (fit$dof / (fit$dof - 2)) * fit$scale_mat,
+               tolerance = 1e-10)
 })

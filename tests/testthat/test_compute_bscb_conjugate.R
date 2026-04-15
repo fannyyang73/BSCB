@@ -265,8 +265,9 @@ test_that("return object has correct structure", {
   expect_true("lower_bound"   %in% names(fit))
   expect_true("upper_bound"   %in% names(fit))
   expect_true("mu_star"       %in% names(fit))
-  expect_true("cov_theta"     %in% names(fit))
   expect_true("dof"           %in% names(fit))
+  expect_true("scale_mat"     %in% names(fit))
+  expect_true("cov_theta"     %in% names(fit))
   expect_true("x_range"       %in% names(fit))
   expect_true("order_form"    %in% names(fit))
   expect_true("theta_true"    %in% names(fit))
@@ -453,4 +454,23 @@ test_that("verbose mode produces messages", {
     ),
     "lambda ="
   )
+})
+
+# Test 17: scale_mat is correct
+test_that("scale_mat has correct dimension and relates to cov_theta", {
+  set.seed(123)
+  n <- 50
+  x <- seq(-5, 5, length.out = n)
+  X <- cbind(1, x, x^2)
+  Y <- rnorm(n)
+
+  fit <- compute_bscb_conjugate(
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+    verbose = FALSE
+  )
+
+  expect_equal(dim(fit$scale_mat), c(ncol(X), ncol(X)))
+  expect_equal(fit$cov_theta,
+               (fit$dof / (fit$dof - 2)) * fit$scale_mat,
+               tolerance = 1e-10)
 })
