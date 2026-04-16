@@ -1,11 +1,13 @@
 ## R CMD check results
 
-### win-builder (R-devel)
-0 errors | 0 warnings | 1 note
-
 ### Local (macOS)
 0 errors | 2 warnings | 1 note
 
+### win-builder (R-devel)
+0 errors | 0 warnings | 1 note
+
+### win-builder (R-release)
+0 errors | 0 warnings | 1 note
 
 ---
 
@@ -38,9 +40,17 @@ terms, not misspellings.
 
 ### cmdstanr not in mainstream repositories
 cmdstanr is available at https://stan-dev.r-universe.dev, specified
-via the Additional_repositories field in DESCRIPTION.
+via the Additional_repositories field in DESCRIPTION. The HMC-based
+method (compute_bscb_hmc) requires cmdstanr for Stan model compilation
+and sampling. Users who do not need the HMC method can use the package
+without installing cmdstanr.
 
-### unable to verify current time
+### generate_simulation_data example time
+The generate_simulation_data() example slightly exceeds 5 seconds on
+Linux (elapsed: 5.45s) due to D-optimal design computation. The
+replication has been reduced to 1 to speed up execution. 
+
+### unable to verify current time (local only)
 Due to a local network issue, unrelated to the package.
 
 ---
@@ -49,6 +59,7 @@ Due to a local network issue, unrelated to the package.
 - macOS Sequoia 15.x (local), R 4.4.x
 - win-builder (R-devel), R 4.6.0 beta
 - win-builder (R-release), R 4.5.3
+- Debian Linux (CRAN pre-test), R-devel
 
 ## Downstream dependencies
 None (new submission)

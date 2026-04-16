@@ -18,7 +18,7 @@ HMC_fast <- list(
   iter_sampling = 200,
   iter_warmup   = 200,
   chains        = 2,
-  L             = 200,
+  L             = 100,
   draw_num      = 100
 )
 

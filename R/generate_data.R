@@ -45,6 +45,8 @@
 #' @export
 #'
 #' @examples
+#'
+#' \donttest{
 #' # Example 1: quadratic model, D-optimal design
 #' sim_data <- generate_simulation_data(
 #'   p           = 2,
@@ -53,14 +55,16 @@
 #'   theta_true  = c(-6, -3, 0.25),
 #'   a           = -5,
 #'   b           =  5,
-#'   replication = 100,
+#'   replication = 1,
 #'   design_index = 2,
 #'   center_index = 1
 #' )
 #'
 #' X      <- sim_data$X
 #' Y.list <- sim_data$Y.list
+#' }
 #'
+#' \donttest{
 #' # Example 2: cubic model, equally-spaced design
 #' sim_data2 <- generate_simulation_data(
 #'   p            = 3,
@@ -69,17 +73,18 @@
 #'   theta_true   = c(1, 2, -1, 0.5),
 #'   a            = -5,
 #'   b            =  5,
-#'   replication  = 100,
+#'   replication  = 1,
 #'   design_index = 1,
 #'   center_index = 1
 #' )
+#' }
 generate_simulation_data <- function(p,
                                      n,
                                      e_sd,
                                      theta_true,
                                      a           = -5,
                                      b           =  5,
-                                     replication = 1000,
+                                     replication = 2,
                                      design_index = 2,
                                      center_index = 1,
                                      n_ES_x       = n,

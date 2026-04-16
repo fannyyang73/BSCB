@@ -102,8 +102,8 @@ e_sd <- 0.2
 epsilon <- rnorm(n, mean = 0, sd = e_sd)
 Y <- X \%*\% theta_true + epsilon
 
-# Compute BSCB-C with default settings
-fit <- compute_bscb_conjugate(X=X,  Y=Y, alpha = 0.05, a = -5, b = 5, L = 500000,
+# Notably, this is a quick example. In theory, L should set to L=500,000 or larger;
+fit <- compute_bscb_conjugate(X=X,  Y=Y, alpha = 0.05, a = -5, b = 5, L = 5000,
                               AR_setting = 0, # 0: iid error; 1: autoregressive error
                               rho = NULL,
                               hyperparameter = "empirical",

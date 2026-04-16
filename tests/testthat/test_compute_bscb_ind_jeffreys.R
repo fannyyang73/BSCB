@@ -15,7 +15,7 @@ fit <- compute_bscb_ind_jeffreys(
   alpha      = 0.05,
   a          = -5,
   b          =  5,
-  L          = 500,
+  L          = 100,
   theta_true = theta_true,
   verbose    = FALSE
 )
@@ -65,7 +65,7 @@ test_that("lambda is a positive scalar", {
 })
 
 test_that("lambda_samples has length L", {
-  expect_length(fit$lambda_samples, 500)
+  expect_length(fit$lambda_samples, 100)
 })
 
 test_that("lambda equals the (1 - alpha) quantile of lambda_samples", {

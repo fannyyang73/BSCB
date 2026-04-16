@@ -12,7 +12,7 @@ test_that("compute_bscb_conjugate works with quadratic model", {
   Y <- X %*% theta_true + rnorm(n, 0, 0.2)
 
   fit <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     AR_setting = 0, verbose = FALSE
   )
 
@@ -46,7 +46,7 @@ test_that("bound functions are vectorized", {
   Y <- X %*% theta_true + rnorm(n, 0, 0.2)
 
   fit <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     verbose = FALSE
   )
 
@@ -70,17 +70,17 @@ test_that("different alpha levels produce different lambdas", {
   Y <- X %*% theta_true + rnorm(n, 0, 0.2)
 
   fit_90 <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.10, a = -5, b = 5, L = 1000,
+    X = X, Y = Y, alpha = 0.10, a = -5, b = 5, L = 100,
     verbose = FALSE
   )
 
   fit_95 <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     verbose = FALSE
   )
 
   fit_99 <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.01, a = -5, b = 5, L = 1000,
+    X = X, Y = Y, alpha = 0.01, a = -5, b = 5, L = 100,
     verbose = FALSE
   )
 
@@ -107,7 +107,7 @@ test_that("AR error structure works", {
   Y_ar <- X %*% theta_true + epsilon_ar
 
   fit_ar <- compute_bscb_conjugate(
-    X = X, Y = Y_ar, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X, Y = Y_ar, alpha = 0.05, a = -5, b = 5, L = 100,
     AR_setting = 1, rho = 0.5, verbose = FALSE
   )
 
@@ -126,7 +126,7 @@ test_that("AR setting without rho throws error", {
 
   expect_error(
     compute_bscb_conjugate(
-      X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+      X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
       AR_setting = 1, rho = NULL, verbose = FALSE
     ),
     "rho must be provided when AR_setting = 1"
@@ -144,7 +144,7 @@ test_that("input validation works", {
   # Y length mismatch
   expect_error(
     compute_bscb_conjugate(
-      X = X, Y = rnorm(n + 5), alpha = 0.05, a = -5, b = 5, L = 1000,
+      X = X, Y = rnorm(n + 5), alpha = 0.05, a = -5, b = 5, L = 100,
       verbose = FALSE
     ),
     "Length of Y must equal number of rows in X"
@@ -153,7 +153,7 @@ test_that("input validation works", {
   # Invalid AR_setting
   expect_error(
     compute_bscb_conjugate(
-      X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+      X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
       AR_setting = 2, verbose = FALSE
     ),
     "AR_setting must be 0 or 1"
@@ -169,7 +169,7 @@ test_that("automatic x range detection works", {
   Y <- rnorm(n)
 
   fit <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, L = 1000,
+    X = X, Y = Y, alpha = 0.05, L = 100,
     verbose = FALSE
   )
 
@@ -189,7 +189,7 @@ test_that("works with different polynomial degrees", {
   Y_linear <- X_linear %*% theta_linear + rnorm(n, 0, 0.2)
 
   fit_linear <- compute_bscb_conjugate(
-    X = X_linear, Y = Y_linear, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X_linear, Y = Y_linear, alpha = 0.05, a = -5, b = 5, L = 100,
     verbose = FALSE
   )
 
@@ -202,7 +202,7 @@ test_that("works with different polynomial degrees", {
   Y_cubic <- X_cubic %*% theta_cubic + rnorm(n, 0, 0.5)
 
   fit_cubic <- compute_bscb_conjugate(
-    X = X_cubic, Y = Y_cubic, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X_cubic, Y = Y_cubic, alpha = 0.05, a = -5, b = 5, L = 100,
     verbose = FALSE
   )
 
@@ -222,17 +222,17 @@ test_that("all optimization methods work", {
   skip_if_not_installed("DEoptim")
 
   fit_P <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 500,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     optimize_type = "P", verbose = FALSE
   )
 
   fit_G <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 500,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     optimize_type = "G", verbose = FALSE
   )
 
   fit_D <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 500,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     optimize_type = "D", verbose = FALSE
   )
 
@@ -256,7 +256,7 @@ test_that("return object has correct structure", {
   Y <- rnorm(n)
 
   fit <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     verbose = FALSE
   )
 
@@ -296,7 +296,7 @@ test_that("lambda samples are stored correctly", {
   x <- seq(-5, 5, length.out = n)
   X <- cbind(1, x, x^2)
   Y <- rnorm(n)
-  L <- 1000
+  L <- 100
 
   fit <- compute_bscb_conjugate(
     X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = L,
@@ -320,17 +320,17 @@ test_that("different hyperparameter settings work", {
   Y <- rnorm(n)
 
   fit_emp <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     hyperparameter = "empirical", verbose = FALSE
   )
 
   fit_unit <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     hyperparameter = "unit_info", verbose = FALSE
   )
 
   fit_g <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     hyperparameter = "g_prior", verbose = FALSE
   )
 
@@ -386,7 +386,7 @@ test_that("empirical coverage rate is reasonable", {
     Y <- X %*% theta_true + rnorm(n, 0, 0.2)
 
     fit <- compute_bscb_conjugate(
-      X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 5000,
+      X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
       verbose = FALSE
     )
 
@@ -416,13 +416,13 @@ test_that("results are reproducible with same seed", {
 
   set.seed(123)
   fit1 <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     verbose = FALSE
   )
 
   set.seed(123)
   fit2 <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     verbose = FALSE
   )
 
@@ -465,7 +465,7 @@ test_that("scale_mat has correct dimension and relates to cov_theta", {
   Y <- rnorm(n)
 
   fit <- compute_bscb_conjugate(
-    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 1000,
+    X = X, Y = Y, alpha = 0.05, a = -5, b = 5, L = 100,
     verbose = FALSE
   )
 

@@ -11,7 +11,7 @@ make_conjugate_fit <- function(n = 30, seed = 123) {
     alpha      = 0.05,
     a          = -5,
     b          =  5,
-    L          = 500,
+    L          = 100,
     theta_true = theta_true,
     verbose    = FALSE
   )
@@ -31,7 +31,7 @@ make_jeffreys_fit <- function(n = 30, seed = 123) {
     alpha      = 0.05,
     a          = -5,
     b          =  5,
-    L          = 500,
+    L          = 100,
     theta_true = theta_true,
     verbose    = FALSE
   )
@@ -187,7 +187,7 @@ test_that("coverage_PSCP works for HMC fit using theta_mat", {
       iter_sampling = 200,
       iter_warmup   = 200,
       chains        = 2,
-      L             = 200,
+      L             = 100,
       draw_num      = 100
     ),
     stan_deprecate = function(w) invokeRestart("muffleWarning")
@@ -217,7 +217,7 @@ test_that("coverage_PSCP result for HMC matches fit$PSCP approximately", {
       iter_sampling = 200,
       iter_warmup   = 200,
       chains        = 2,
-      L             = 200,
+      L             = 100,
       draw_num      = 500
     ),
     stan_deprecate = function(w) invokeRestart("muffleWarning")

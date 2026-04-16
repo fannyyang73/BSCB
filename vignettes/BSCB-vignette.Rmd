@@ -36,7 +36,7 @@ We simulate data from a quadratic regression model
 $Y_i = \theta_0 + \theta_1 x_i + \theta_2 x_i^2 + \varepsilon_i$,
 where $\varepsilon_i \sim N(0, \sigma^2)$.
 
-
+Notably, $L$ should set to $L=500,000$, whereas here $L=5000$ just to show a quick example.
 
 ```{r}
 # Simulate data from a quadratic model using a D-optimal covariate design
@@ -44,7 +44,7 @@ theta_true <- c(-6, -3, 0.25)
 alpha <- 0.05
 a <- -0.5
 b <- 0.5
-L <- 500000
+L <- 5000 
 p <- 2
 n <- 20
 e_sd <- 0.2
@@ -83,7 +83,7 @@ Y <- as.numeric(sim_data$Y.list[[1]])
 The Normal-Gamma conjugate prior supports three hyperparameter specifications:
 `"empirical"` (empirical Bayes), `"unit_info"` (unit-information prior), and
 `"g_prior"` (Zellner's g-prior). The critical constant $\lambda$ is estimated
-via $L = 500{,}000$ Monte Carlo draws.
+via $L$ Monte Carlo draws.
 
 ```{r}
 # --- BSCB-C: Bayesian simultaneous credible bands under the Normal-Gamma conjugate prior ---

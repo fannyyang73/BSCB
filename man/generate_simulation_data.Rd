@@ -11,7 +11,7 @@ generate_simulation_data(
   theta_true,
   a = -5,
   b = 5,
-  replication = 1000,
+  replication = 2,
   design_index = 2,
   center_index = 1,
   n_ES_x = n,
@@ -78,6 +78,8 @@ use in simulation studies of Bayesian simultaneous credible bands.
 The design can be either equally-spaced (ES) or D-optimal (DO).
 }
 \examples{
+
+\donttest{
 # Example 1: quadratic model, D-optimal design
 sim_data <- generate_simulation_data(
   p           = 2,
@@ -86,14 +88,16 @@ sim_data <- generate_simulation_data(
   theta_true  = c(-6, -3, 0.25),
   a           = -5,
   b           =  5,
-  replication = 100,
+  replication = 1,
   design_index = 2,
   center_index = 1
 )
 
 X      <- sim_data$X
 Y.list <- sim_data$Y.list
+}
 
+\donttest{
 # Example 2: cubic model, equally-spaced design
 sim_data2 <- generate_simulation_data(
   p            = 3,
@@ -102,8 +106,9 @@ sim_data2 <- generate_simulation_data(
   theta_true   = c(1, 2, -1, 0.5),
   a            = -5,
   b            =  5,
-  replication  = 100,
+  replication  = 1,
   design_index = 1,
   center_index = 1
 )
+}
 }

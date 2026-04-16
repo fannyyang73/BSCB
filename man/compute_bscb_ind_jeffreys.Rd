@@ -83,7 +83,7 @@ of freedom \eqn{n - p - 1}.
 \donttest{
 # Quadratic model with i.i.d. errors
 # This is for a quick demonstration;
-# For actual use, please set L = 500000.
+# For actual use, please set L = 500,000.
 set.seed(123)
 n <- 50
 x <- seq(-5, 5, length.out = n)
@@ -97,7 +97,7 @@ fit <- compute_bscb_ind_jeffreys(
   alpha      = 0.05,
   a          = -5,
   b          =  5,
-  L          = 50000,
+  L          = 5000,
   theta_true = theta_true,
   verbose    = FALSE
 )
