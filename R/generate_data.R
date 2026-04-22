@@ -31,6 +31,9 @@
 #' @param rho Numeric. AR(1) coefficient. Only used when \code{AR_index = 1}.
 #' @param batch_index Integer. Batch index used as part of the random seed
 #'   (\code{set.seed(1000 * batch_index + i)} for replication \code{i}).
+#' @param seed Integer or \code{NULL}. Base random seed for reproducibility for
+#' D-optimal design. If \code{NULL} (default), no seed is set and results will
+#' vary between runs.
 #'
 #' @return A list containing:
 #' \describe{
@@ -91,7 +94,8 @@ generate_simulation_data <- function(p,
                                      n_DO_init_x  = 300000,
                                      AR_index     = 0,
                                      rho          = 0.1,
-                                     batch_index  = 1) {
+                                     batch_index  = 1,
+                                     seed = NULL) {
 
   # ---------------------------------------------------------------------------
   # Input validation
@@ -141,7 +145,7 @@ generate_simulation_data <- function(p,
 
     design_matrix <- t(sapply(x_candidates, order_form))  # (n_DO_init_x) x (p+1)
 
-    set.seed(42) # Fix seed before od_KL to ensure reproducibility
+    if(!is.null(seed)){set.seed(seed)}
     d_opt <- OptimalDesign::od_KL(
       Fx   = design_matrix,
       N    = n,
@@ -163,7 +167,7 @@ generate_simulation_data <- function(p,
   # ---------------------------------------------------------------------------
   Y.list <- vector("list", replication)
   for (i in seq_len(replication)) {
-    set.seed(1000 * batch_index + i)
+    if(!is.null(batch_index)){set.seed(1000 * batch_index + i)}
     epsilon   <- MASS::mvrnorm(n = 1, mu = rep(0, n), Sigma = e_sd^2 * V)
     Y.list[[i]] <- X %*% theta_true + epsilon
   }

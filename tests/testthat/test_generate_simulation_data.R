@@ -32,16 +32,16 @@ test_that("Y.list has correct length and each Y has length n", {
   expect_true(all(sapply(sim$Y.list, length) == 20))
 })
 
-test_that("results are reproducible with same batch_index", {
+test_that("results are reproducible with same batch_index and same seed", {
   sim1 <- generate_simulation_data(
     p = 2, n = 20, e_sd = 0.2,
     theta_true = c(-6, -3, 0.25),
-    replication = 2, batch_index = 1
+    replication = 2, batch_index = 1, seed=42
   )
   sim2 <- generate_simulation_data(
     p = 2, n = 20, e_sd = 0.2,
     theta_true = c(-6, -3, 0.25),
-    replication = 2, batch_index = 1
+    replication = 2, batch_index = 1, seed=42
   )
   expect_identical(sim1$Y.list, sim2$Y.list)
 })

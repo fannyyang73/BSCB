@@ -130,7 +130,7 @@ The critical constant lambda is estimated by Monte Carlo, and the
 Posterior Simultaneous Coverage Probability (PSCP) is also returned.
 }
 \examples{
-\dontrun{
+\donttest{
   set.seed(42)
   n <- 20; p <- 2
   x_seq <- seq(-5, 5, length.out = n)

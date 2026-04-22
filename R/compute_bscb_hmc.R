@@ -85,7 +85,7 @@
 #' @seealso \code{\link{compute_bscb_conjugate}}, \code{\link{compute_bscb_ind_jeffreys}}
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   set.seed(42)
 #'   n <- 20; p <- 2
 #'   x_seq <- seq(-5, 5, length.out = n)

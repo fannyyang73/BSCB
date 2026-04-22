@@ -18,7 +18,8 @@ generate_simulation_data(
   n_DO_init_x = 3e+05,
   AR_index = 0,
   rho = 0.1,
-  batch_index = 1
+  batch_index = 1,
+  seed = NULL
 )
 }
 \arguments{
@@ -60,6 +61,10 @@ Only used when \code{design_index = 2}.}
 
 \item{batch_index}{Integer. Batch index used as part of the random seed
 (\code{set.seed(1000 * batch_index + i)} for replication \code{i}).}
+
+\item{seed}{Integer or \code{NULL}. Base random seed for reproducibility for
+D-optimal design. If \code{NULL} (default), no seed is set and results will
+vary between runs.}
 }
 \value{
 A list containing:
