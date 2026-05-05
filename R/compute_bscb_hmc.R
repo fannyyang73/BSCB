@@ -34,6 +34,9 @@
 #'   Default is \code{4000}.
 #' @param iter_warmup Number of warmup draws per chain. Default is \code{4000}.
 #' @param chains Number of Markov chains. Default is \code{4}.
+#' @param thin_number Positive integer. Thinning interval for posterior draws.
+#'   A value of \code{k} retains every \code{k}-th draw from each chain.
+#'   Default is \code{1} (no thinning).
 #' @param adapt_delta Target acceptance probability for the NUTS sampler.
 #'   Default is \code{0.95}.
 #' @param max_treedepth Maximum tree depth for the NUTS sampler.
@@ -64,7 +67,7 @@
 #'   \item{mu_star}{Posterior mean of \code{theta} (length \code{p+1}).}
 #'   \item{cov_theta}{Posterior covariance matrix of \code{theta}.}
 #'   \item{theta_mat}{Matrix of posterior draws,
-#'     \code{(chains * iter_sampling) x (p+1)}.}
+#'     \code{(chains * floor(iter_sampling / thin_number)) x (p+1)}.}
 #'   \item{x_range}{Numeric vector \code{c(a, b)}.}
 #'   \item{call}{The matched call.}
 #'   \item{method}{Character string \code{"HMC"}.}
@@ -78,8 +81,8 @@
 #'   \item{params}{List of additional settings: \code{AR_setting},
 #'     \code{rho}, \code{prior_type}, \code{normal_theta_sd},
 #'     \code{normal_sigma_sd}, \code{cauchy_scale}, \code{iter_sampling},
-#'     \code{iter_warmup}, \code{chains}, \code{L}, \code{draw_num},
-#'     \code{optimize_type}.}
+#'     \code{iter_warmup}, \code{chains}, \code{thin_number}, \code{L},
+#'     \code{draw_num}, \code{optimize_type}.}
 #'
 #'
 #' @seealso \code{\link{compute_bscb_conjugate}}, \code{\link{compute_bscb_ind_jeffreys}}
@@ -115,6 +118,7 @@ compute_bscb_hmc <- function(Y, X, V = diag(nrow(X)),
                              iter_sampling   = 4000,
                              iter_warmup     = 4000,
                              chains          = 4,
+                             thin_number     = 1,
                              adapt_delta     = 0.95,
                              max_treedepth   = 15,
                              AR_setting      = 0,
@@ -225,6 +229,7 @@ compute_bscb_hmc <- function(Y, X, V = diag(nrow(X)),
     iter_sampling   = iter_sampling,
     iter_warmup     = iter_warmup,
     chains          = chains,
+    thin            = thin_number,
     parallel_chains = 1L,
     refresh         = 0L,
     adapt_delta     = adapt_delta,
@@ -384,6 +389,7 @@ compute_bscb_hmc <- function(Y, X, V = diag(nrow(X)),
         iter_sampling   = iter_sampling,
         iter_warmup     = iter_warmup,
         chains          = chains,
+        thin_number     = thin_number,
         L               = L,
         draw_num        = draw_num,
         optimize_type   = optimize_type
