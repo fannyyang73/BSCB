@@ -141,6 +141,7 @@ fit_h <- compute_bscb_hmc(
   theta_true = theta_true,
   prior_type = "normal_half_cauchy",
   L     = L,
+  thin_number = 4,
   draw_num = 10000
 )
 
