@@ -57,8 +57,8 @@ Due to a local network issue, unrelated to the package.
 
 ## Test environments
 - macOS Sequoia 15.x (local), R 4.4.x
-- win-builder (R-devel), R 4.6.0 beta
-- win-builder (R-release), R 4.5.3
+- win-builder (R-devel), R Under development (unstable) (2026-06-29 r90199 ucrt)
+- win-builder (R-release), R 4.6.1 (2026-06-24 ucrt)
 - Debian Linux (CRAN pre-test), R-devel
 
 ## Downstream dependencies
