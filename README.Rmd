@@ -32,6 +32,11 @@ prior specifications:
 - **BPCB-I-J**: Bayesian pointwise credible band under the independent Jeffreys
   prior
 
+The methodology is based on the following paper:
+
+- Yang, F., Han, Y., Liu, W., & Hall, I. (2026). 
+  [Bayesian simultaneous credible bands for polynomial regression](https://arxiv.org/abs/2606.28015).
+  arXiv preprint arXiv:2606.28015. 
 
 A full demo is available
 [here](https://github.com/fannyyang73/BSCB/tree/main/demo).

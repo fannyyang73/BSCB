@@ -19,6 +19,7 @@ compute_bscb_hmc(
   iter_sampling = 4000,
   iter_warmup = 4000,
   chains = 4,
+  thin_number = 1,
   adapt_delta = 0.95,
   max_treedepth = 15,
   AR_setting = 0,
@@ -68,6 +69,10 @@ Default is \code{4000}.}
 
 \item{chains}{Number of Markov chains. Default is \code{4}.}
 
+\item{thin_number}{Positive integer. Thinning interval for posterior draws.
+A value of \code{k} retains every \code{k}-th draw from each chain.
+Default is \code{1} (no thinning).}
+
 \item{adapt_delta}{Target acceptance probability for the NUTS sampler.
 Default is \code{0.95}.}
 
@@ -105,7 +110,7 @@ following components:
 \item{mu_star}{Posterior mean of \code{theta} (length \code{p+1}).}
 \item{cov_theta}{Posterior covariance matrix of \code{theta}.}
 \item{theta_mat}{Matrix of posterior draws,
-\code{(chains * iter_sampling) x (p+1)}.}
+\code{(chains * floor(iter_sampling / thin_number)) x (p+1)}.}
 \item{x_range}{Numeric vector \code{c(a, b)}.}
 \item{call}{The matched call.}
 \item{method}{Character string \code{"HMC"}.}
@@ -119,8 +124,8 @@ Monte Carlo supremum draws used to derive \code{lambda}.}
 \item{params}{List of additional settings: \code{AR_setting},
 \code{rho}, \code{prior_type}, \code{normal_theta_sd},
 \code{normal_sigma_sd}, \code{cauchy_scale}, \code{iter_sampling},
-\code{iter_warmup}, \code{chains}, \code{L}, \code{draw_num},
-\code{optimize_type}.}
+\code{iter_warmup}, \code{chains}, \code{thin_number}, \code{L},
+\code{draw_num}, \code{optimize_type}.}
 }
 \description{
 Constructs a Bayesian Simultaneous Credible Band (BSCB) for polynomial
