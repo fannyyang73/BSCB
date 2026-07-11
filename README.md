@@ -4,6 +4,9 @@
 # BSCB
 
 <!-- badges: start -->
+
+[![CRAN
+status](https://www.r-pkg.org/badges/version/BSCB)](https://CRAN.R-project.org/package=BSCB)
 <!-- badges: end -->
 
 ## Overview
@@ -32,6 +35,18 @@ A full demo is available
 [here](https://github.com/fannyyang73/BSCB/tree/main/demo).
 
 ## Installation
+
+You can install ‘BSCB’ on CRAN using:
+
+``` r
+install.packages("BSCB")
+```
+
+``` r
+library(BSCB)
+```
+
+Alternatively, you can install the package through github:
 
 ``` r
 # install.packages("devtools")
