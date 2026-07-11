@@ -36,7 +36,7 @@ A full demo is available
 
 ## Installation
 
-You can install ‘BSCB’ on CRAN using:
+You can install `BSCB` on CRAN using:
 
 ``` r
 install.packages("BSCB")
