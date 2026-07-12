@@ -62,9 +62,12 @@ Only used when \code{design_index = 2}.}
 \item{batch_index}{Integer. Batch index used as part of the random seed
 (\code{set.seed(1000 * batch_index + i)} for replication \code{i}).}
 
-\item{seed}{Integer or \code{NULL}. Base random seed for reproducibility for
-D-optimal design. If \code{NULL} (default), no seed is set and results will
-vary between runs.}
+\item{seed}{Integer or \code{NULL}. Base random seed used internally for
+the D-optimal design search (\code{OptimalDesign::od_KL}). If \code{NULL}
+(default), no seed is set and results may vary between runs. When
+\code{seed} is supplied, results are fully reproducible because the
+internal search is stopped after a fixed number of restarts
+(\code{rest.max}), rather than after a fixed time budget.}
 }
 \value{
 A list containing:

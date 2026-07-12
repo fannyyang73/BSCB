@@ -1,5 +1,18 @@
 ## R CMD check results
 
+## Notes for Resubmission
+
+This is a resubmission. The previous version (1.0.0) failed
+`r-devel-linux-x86_64-fedora-gcc` due to a non-reproducible test result in
+`generate_simulation_data()`. The root cause was that
+`OptimalDesign::od_KL()` was called with a time-based stopping rule
+(`t.max`), so the number of completed restarts—and therefore the result—
+depended on machine speed, even with a fixed random seed.
+
+This has been fixed by switching to a fixed-restart stopping rule
+(`rest.max`) instead, which makes the result deterministic given a fixed
+seed, independent of hardware speed or system load.
+
 ### Local (macOS)
 0 errors | 2 warnings | 1 note
 
@@ -7,6 +20,9 @@
 0 errors | 0 warnings | 1 note
 
 ### win-builder (R-release)
+0 errors | 0 warnings | 1 note
+
+### win-builder (R-oldrelease)
 0 errors | 0 warnings | 1 note
 
 ---
@@ -29,10 +45,8 @@ instantiate.
 
 ---
 
-## Notes
+## Note
 
-### New submission
-This is a new submission to CRAN.
 
 ### Possibly misspelled words
 BSCBs, HMC, Jeffreys, ESCR, and PSCP are domain-specific statistical

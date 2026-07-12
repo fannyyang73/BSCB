@@ -31,9 +31,12 @@
 #' @param rho Numeric. AR(1) coefficient. Only used when \code{AR_index = 1}.
 #' @param batch_index Integer. Batch index used as part of the random seed
 #'   (\code{set.seed(1000 * batch_index + i)} for replication \code{i}).
-#' @param seed Integer or \code{NULL}. Base random seed for reproducibility for
-#' D-optimal design. If \code{NULL} (default), no seed is set and results will
-#' vary between runs.
+#' @param seed Integer or \code{NULL}. Base random seed used internally for
+#' the D-optimal design search (\code{OptimalDesign::od_KL}). If \code{NULL}
+#' (default), no seed is set and results may vary between runs. When
+#' \code{seed} is supplied, results are fully reproducible because the
+#' internal search is stopped after a fixed number of restarts
+#' (\code{rest.max}), rather than after a fixed time budget.
 #'
 #' @return A list containing:
 #' \describe{
@@ -149,7 +152,8 @@ generate_simulation_data <- function(p,
     d_opt <- OptimalDesign::od_KL(
       Fx   = design_matrix,
       N    = n,
-      t.max = 5,
+      t.max = 30,
+      rest.max = 5,
       K    = 7,
       L    = 19,
       crit = "D"

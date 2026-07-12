@@ -1,6 +1,5 @@
-# BSCB 1.0.0
+# BSCB 1.0.1
 
-* Initial CRAN submission.
 
 ## Features
 
@@ -23,3 +22,13 @@
 
 * The methodology is described in Yang, F., Han, Y., Liu, W., & Hall, I. 
   (2026), "Bayesian Simultaneous Credible Bands for Polynomial Regression."
+  
+## Bug fixes
+
+* Fixed an issue where `generate_simulation_data()` with `design_index = 2`
+  (D-optimal design) could produce non-reproducible results even when
+  `seed` was supplied. The underlying call to `OptimalDesign::od_KL()`
+  previously relied on a time-based stopping rule (`t.max`), which made
+  the number of completed restarts—and hence the result—dependent on
+  machine speed. The search now stops after a fixed number of restarts
+  (`rest.max`), ensuring full reproducibility given a fixed `seed`.
