@@ -1,31 +1,44 @@
 ## R CMD check results
 
-## Notes for Resubmission
+## Notes for Resubmission (v1.0.2)
+This resubmission adds three co-authors to Authors@R (as "aut" and "cph"),
+and updates the copyright holder listing in the LICENSE file accordingly.
+No change was made to the license type itself (MIT + file LICENSE).
+These co-authors make contributions to the underlying methodology paper 
+(arXiv:2606.28015) and provide suggestions on optimize_function.R: Yang Han 
+(methodology, primary supervision), Wei Liu (methodological contributions), 
+Ian Hall (methodological contributions, co-supervision). No functional or 
+code changes have been made in this version; all checks pass as in the previous 
+submission.
 
-This is a resubmission. The previous version (1.0.0) failed
-`r-devel-linux-x86_64-fedora-gcc` due to a non-reproducible test result in
-`generate_simulation_data()`. The root cause was that
-`OptimalDesign::od_KL()` was called with a time-based stopping rule
-(`t.max`), so the number of completed restarts—and therefore the result—
-depended on machine speed, even with a fixed random seed.
 
-This has been fixed by switching to a fixed-restart stopping rule
-(`rest.max`) instead, which makes the result deterministic given a fixed
-seed, independent of hardware speed or system load.
+## Test environments and results
 
-### Local (macOS)
-0 errors | 2 warnings | 1 note
+| Environment | R version | errors | warnings | notes |
+|---|---|---|---|---|
+| macOS Sequoia 15.x (local) | R 4.4.x | 0 | 2* | 1 |
+| win-builder | R-devel (4.7.0) | 0 | 0 | 1 |
+| win-builder | R-release (4.6.1) | 0 | 0 | 1 |
+| win-builder | R-oldrelease (4.5.3) | 0 | 0 | 1 |
 
-### win-builder (R-devel)
-0 errors | 0 warnings | 1 note
+*local-only warnings, explained below; not reproduced on win-builder or
+expected on CRAN's Linux servers.
 
-### win-builder (R-release)
-0 errors | 0 warnings | 1 note
+## Notes
 
-### win-builder (R-oldrelease)
-0 errors | 0 warnings | 1 note
+### Possibly misspelled words: "al", "et"
+These are part of the standard citation abbreviation "et al." in the
+DESCRIPTION field, not misspellings.
 
----
+### cmdstanr not in mainstream repositories
+cmdstanr is available at https://stan-dev.r-universe.dev, specified via
+the Additional_repositories field in DESCRIPTION. The HMC-based method
+(compute_bscb_hmc) requires cmdstanr for Stan model compilation and
+sampling. Users who do not need the HMC method can use the package
+without installing cmdstanr.
+
+### unable to verify current time (local only)
+Due to a local network issue, unrelated to the package.
 
 ## Warnings (local macOS only, not on CRAN servers)
 
@@ -43,37 +56,5 @@ during Stan model compilation. They are not under the package author's
 control. This is a known issue with R packages using cmdstanr and
 instantiate.
 
----
-
-## Note
-
-
-### Possibly misspelled words
-BSCBs, HMC, Jeffreys, ESCR, and PSCP are domain-specific statistical
-terms, not misspellings.
-
-### cmdstanr not in mainstream repositories
-cmdstanr is available at https://stan-dev.r-universe.dev, specified
-via the Additional_repositories field in DESCRIPTION. The HMC-based
-method (compute_bscb_hmc) requires cmdstanr for Stan model compilation
-and sampling. Users who do not need the HMC method can use the package
-without installing cmdstanr.
-
-### generate_simulation_data example time
-The generate_simulation_data() example slightly exceeds 5 seconds on
-Linux (elapsed: 5.45s) due to D-optimal design computation. The
-replication has been reduced to 1 to speed up execution. 
-
-### unable to verify current time (local only)
-Due to a local network issue, unrelated to the package.
-
----
-
-## Test environments
-- macOS Sequoia 15.x (local), R 4.4.x
-- win-builder (R-devel), R Under development (unstable) (2026-06-29 r90199 ucrt)
-- win-builder (R-release), R 4.6.1 (2026-06-24 ucrt)
-- Debian Linux (CRAN pre-test), R-devel
-
 ## Downstream dependencies
-None (new submission)
+There are currently no reverse dependencies for this package on CRAN.

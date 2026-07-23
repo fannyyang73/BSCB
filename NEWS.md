@@ -1,4 +1,10 @@
-# BSCB 1.0.1
+# BSCB 1.0.2
+
+## Changes
+
+* Added Yang Han, Wei Liu, and Ian Hall as co-authors, reflecting their
+  contributions to the methodology described in the accompanying paper
+  (arXiv:2606.28015) as well as suggestions on optimize_function.R.
 
 
 ## Features
